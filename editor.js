@@ -14,7 +14,7 @@ let saveTimer = null;
 function loadDraft() {
   try {
     const loaded = JSON.parse(localStorage.getItem(DRAFT_KEY)) || clone(window.SONATA_CONTENT);
-    if (!loaded.prologue) loaded.prologue = clone(window.SONATA_CONTENT.prologue);
+    loaded.prologue = { ...clone(window.SONATA_CONTENT.prologue), ...(loaded.prologue || {}) };
     Object.values(loaded.locations || {}).forEach((location) => {
       if (location.requiredKeyClues == null) location.requiredKeyClues = 0;
       if (!location.scenes) {
@@ -23,7 +23,11 @@ function loadDraft() {
     });
     if (!loaded.dream.hotspots) loaded.dream.hotspots = clone(window.SONATA_CONTENT.dream.hotspots);
     if (!loaded.dream.lightPoint) loaded.dream.lightPoint = clone(window.SONATA_CONTENT.dream.lightPoint);
-    if (!loaded.timelineModules) loaded.timelineModules = clone(window.SONATA_CONTENT.timelineModules);
+    if (loaded.dream.unlockAtKeyClues == null) loaded.dream.unlockAtKeyClues = window.SONATA_CONTENT.dream.unlockAtKeyClues || Math.ceil(loaded.keyClueGoal / 2);
+    if (loaded.dream.secondFormRequiredKeyClues == null) loaded.dream.secondFormRequiredKeyClues = window.SONATA_CONTENT.dream.secondFormRequiredKeyClues || loaded.keyClueGoal;
+    Object.values(loaded.dream.hotspots || {}).flat().forEach((spot) => { if (spot.requiredKeyClues == null) spot.requiredKeyClues = loaded.dream.unlockAtKeyClues; });
+    if (!loaded.rumorModules) loaded.rumorModules = clone(window.SONATA_CONTENT.rumorModules || []);
+    delete loaded.timelineModules;
     return loaded;
   }
   catch { return clone(window.SONATA_CONTENT); }
@@ -76,6 +80,7 @@ document.querySelectorAll("[data-credit]").forEach((input) => {
 document.querySelectorAll("[data-section]").forEach((button) => button.addEventListener("click", () => {
   document.querySelectorAll("[data-section]").forEach((item) => item.classList.toggle("is-current", item === button));
   document.querySelectorAll("[data-editor-section]").forEach((section) => section.classList.toggle("is-active", section.dataset.editorSection === button.dataset.section));
+  if (button.dataset.section === "timeline") renderTimelineEditor();
 }));
 
 function renderLocations() {
@@ -179,27 +184,23 @@ function renderHotspots() {
 function renderTimelineEditor() {
   const container = document.querySelector("#timeline-editor");
   container.innerHTML = "";
-  draft.timelineModules.forEach((module, moduleIndex) => {
+  const clues = Object.values(draft.locations).flatMap((location) => location.scenes.flatMap((scene) => scene.hotspots));
+  draft.rumorModules.forEach((module, moduleIndex) => {
     const card = document.createElement("section");
     card.className = "timeline-module-editor";
-    card.innerHTML = `<div class="card-head"><h3>小模块 ${moduleIndex + 1}</h3><button class="remove-button" data-remove-module type="button">删除模块</button></div><div class="form-grid"><label>模块名称<input data-module-field="title" value="${escapeHtml(module.title || "")}"></label><label>需要几条关键线索<input data-module-field="requiredKeyClues" type="number" min="0" value="${module.requiredKeyClues || 0}"></label><label>模块说明<textarea data-module-field="intro">${escapeHtml(module.intro || "")}</textarea></label></div><div class="card-head"><h3>事件卡</h3><button data-add-event type="button">＋ 新增事件卡</button></div><div class="module-events"></div>`;
+    module.evidenceIds ||= [];
+    card.innerHTML = `<div class="card-head"><h3>传闻 ${moduleIndex + 1}</h3><button class="remove-button" data-remove-module type="button">删除传闻</button></div><div class="form-grid"><label>模块名称<input data-module-field="title" value="${escapeHtml(module.title || "")}"></label><label>开放所需关键线索<input data-module-field="requiredKeyClues" type="number" min="0" value="${module.requiredKeyClues || 0}"></label><label class="full-width">流传的错误说法<textarea data-module-field="rumor">${escapeHtml(module.rumor || "")}</textarea></label><label class="full-width">成功后显示的更正结论<textarea data-module-field="correction">${escapeHtml(module.correction || "")}</textarea></label></div><div class="card-head"><h3>能够反驳它的证据</h3></div><div class="evidence-picker">${clues.map((clue) => `<label><input type="checkbox" data-evidence-id="${escapeHtml(clue.id)}" ${module.evidenceIds.includes(clue.id) ? "checked" : ""}><span><b>${escapeHtml(clue.title || "未命名调查点")}</b><small>${escapeHtml(clue.id)}</small></span></label>`).join("") || "<p class=\"section-help\">请先在地点中新增调查点。</p>"}</div>`;
     card.querySelectorAll("[data-module-field]").forEach((input) => input.addEventListener("input", () => { module[input.dataset.moduleField] = input.type === "number" ? Number(input.value) : input.value; saveDraft(); }));
-    card.querySelector("[data-remove-module]").addEventListener("click", () => { if (!confirm("确定删除这个历史复原模块吗？")) return; draft.timelineModules.splice(moduleIndex, 1); saveDraft(); renderTimelineEditor(); });
-    card.querySelector("[data-add-event]").addEventListener("click", () => { module.events.push({ id: `${module.id}-event-${Date.now()}`, title: "新事件", text: "在此填写事件说明。", order: module.events.length + 1 }); normalizeTimeline(); saveDraft(); renderTimelineEditor(); });
-    const eventsContainer = card.querySelector(".module-events");
-    module.events.forEach((item, eventIndex) => {
-      const row = document.createElement("div");
-      row.className = "timeline-edit-row";
-      row.innerHTML = `<span>${eventIndex + 1}</span><input data-field="title" value="${escapeHtml(item.title || "")}" aria-label="事件标题"><textarea data-field="text" aria-label="事件说明">${escapeHtml(item.text || "")}</textarea><button class="remove-button" type="button">删除</button>`;
-      row.querySelectorAll("[data-field]").forEach((input) => input.addEventListener("input", () => { item[input.dataset.field] = input.value; saveDraft(); }));
-      row.querySelector("button").addEventListener("click", () => { module.events.splice(eventIndex, 1); normalizeTimeline(); saveDraft(); renderTimelineEditor(); });
-      eventsContainer.appendChild(row);
-    });
+    card.querySelector("[data-remove-module]").addEventListener("click", () => { if (!confirm("确定删除这条传闻吗？")) return; draft.rumorModules.splice(moduleIndex, 1); saveDraft(); renderTimelineEditor(); });
+    card.querySelectorAll("[data-evidence-id]").forEach((input) => input.addEventListener("change", () => {
+      module.evidenceIds = [...card.querySelectorAll("[data-evidence-id]:checked")].map((item) => item.dataset.evidenceId);
+      saveDraft();
+    }));
     container.appendChild(card);
   });
 }
 
-function normalizeTimeline() { draft.timelineModules.forEach((module) => module.events.forEach((item, index) => { item.order = index + 1; })); }
+function normalizeTimeline() {}
 
 function renderHistoryEditor() {
   const container = document.querySelector("#history-editor");
@@ -229,7 +230,7 @@ function renderDreamEditor() {
       <button class="dream-editor-light" data-dream-light type="button" style="left:${light.x}%;top:${light.y}%" aria-label="拖动切换光点"></button>
     </div>
     <p class="section-help">点击画面可以放置当前选择的点；也可以直接按住红色调查点或金色光点拖动。</p>
-    <div class="dream-editor-cards">${spots.map((spot, index) => `<div class="editor-card"><div class="card-head"><h3>${form === "black" ? "黑底" : "白底"}调查点 ${index + 1}</h3><button class="remove-button" data-remove-dream="${index}" type="button">删除</button></div><label>标题<input data-dream-field="title" data-dream-index="${index}" value="${escapeHtml(spot.title || "")}"></label><label>线索文字<textarea data-dream-field="text" data-dream-index="${index}">${escapeHtml(spot.text || "")}</textarea></label><p class="section-help">坐标：${spot.x}% / ${spot.y}%</p></div>`).join("")}</div>`;
+    <div class="dream-editor-cards">${spots.map((spot, index) => `<div class="editor-card"><div class="card-head"><h3>${form === "black" ? "黑底" : "白底"}调查点 ${index + 1}</h3><button class="remove-button" data-remove-dream="${index}" type="button">删除</button></div><div class="form-grid"><label>标题<input data-dream-field="title" data-dream-index="${index}" value="${escapeHtml(spot.title || "")}"></label><label>现实中达到几条关键线索后出现<input data-dream-field="requiredKeyClues" data-dream-index="${index}" type="number" min="1" value="${spot.requiredKeyClues || draft.dream.unlockAtKeyClues}"></label></div><label>线索文字<textarea data-dream-field="text" data-dream-index="${index}">${escapeHtml(spot.text || "")}</textarea></label><p class="section-help">坐标：${spot.x}% / ${spot.y}%</p></div>`).join("")}</div>`;
 
   const preview = container.querySelector("#dream-preview");
   const previewImage = dreamPreviewUrls[form] || draft.dream[artworkKey];
@@ -249,10 +250,10 @@ function renderDreamEditor() {
   });
   container.querySelector("#add-dream-hotspot").addEventListener("click", () => {
     if (spots.length >= 2) return;
-    spots.push({ id: `dream-${form}-${Date.now()}`, x: 50, y: 50, title: "新梦境调查点", text: "在此填写梦境线索。" });
+    spots.push({ id: `dream-${form}-${Date.now()}`, x: 50, y: 50, requiredKeyClues: draft.dream.unlockAtKeyClues, title: "新梦境调查点", text: "在此填写梦境线索。" });
     activeDreamHotspot = spots.length - 1; dreamPlacement = "hotspot"; saveDraft(); renderDreamEditor();
   });
-  container.querySelectorAll("[data-dream-field]").forEach((input) => input.addEventListener("input", () => { spots[Number(input.dataset.dreamIndex)][input.dataset.dreamField] = input.value; saveDraft(); }));
+  container.querySelectorAll("[data-dream-field]").forEach((input) => input.addEventListener("input", () => { spots[Number(input.dataset.dreamIndex)][input.dataset.dreamField] = input.type === "number" ? Number(input.value) : input.value; saveDraft(); }));
   container.querySelectorAll("[data-remove-dream]").forEach((button) => button.addEventListener("click", () => { spots.splice(Number(button.dataset.removeDream), 1); activeDreamHotspot = 0; saveDraft(); renderDreamEditor(); }));
 
   function placeDreamPoint(event, target) {
@@ -287,11 +288,7 @@ document.querySelector("#add-location").addEventListener("click", () => {
 });
 document.querySelector("#add-timeline-module").addEventListener("click", () => {
   const id = `module-${Date.now()}`;
-  draft.timelineModules.push({ id, title: "新复原模块", intro: "在此填写这一小节需要整理的历史范围。", requiredKeyClues: draft.keyClueGoal, events: [
-    { id: `${id}-event-1`, title: "第一件事", text: "在此填写事件说明。", order: 1 },
-    { id: `${id}-event-2`, title: "第二件事", text: "在此填写事件说明。", order: 2 },
-    { id: `${id}-event-3`, title: "第三件事", text: "在此填写事件说明。", order: 3 }
-  ] });
+  draft.rumorModules.push({ id, title: "新传闻", rumor: "在此填写流传的错误说法。", correction: "在此填写更正后的结论。", requiredKeyClues: draft.keyClueGoal, evidenceIds: [] });
   saveDraft(); renderTimelineEditor();
 });
 document.querySelector("#add-history").addEventListener("click", () => { draft.history.push({ title: "新段落", artwork: "", text: "在此填写复原后的完整故事正文。" }); saveDraft(); renderHistoryEditor(); });

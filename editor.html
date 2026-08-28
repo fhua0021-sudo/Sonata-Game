@@ -24,7 +24,7 @@
       <nav class="editor-nav" aria-label="编辑栏目">
         <button class="is-current" data-section="basic" type="button">基本信息</button>
         <button data-section="locations" type="button">地点与场景</button>
-        <button data-section="timeline" type="button">时间线</button>
+        <button data-section="timeline" type="button">传闻勘误</button>
         <button data-section="dream" type="button">梦境</button>
         <button data-section="history" type="button">完整历史</button>
         <button data-section="credits" type="button">感谢名单</button>
@@ -43,6 +43,7 @@
             <label>邮件落款<input data-path="prologue.signature" type="text" /></label>
             <label>最先解锁的地点<select id="prologue-first-location"></select></label>
             <label class="full-width">导师邮件正文<textarea data-path="prologue.body"></textarea></label>
+            <label class="full-width">开场展示的通行传闻<textarea data-path="prologue.rumor"></textarea></label>
           </div>
         </section>
 
@@ -55,22 +56,22 @@
         </section>
 
         <section class="editor-section" data-editor-section="timeline">
-          <div class="section-heading"><div><p>03</p><h2>历史复原模块</h2></div><button id="add-timeline-module" type="button">＋ 新增小模块</button></div>
-          <p class="section-help">每个小模块都是一次独立的时间排序。模块中的正确顺序按照事件卡从上到下生成，玩家看到时会被打乱。</p>
+          <div class="section-heading"><div><p>03</p><h2>传闻勘误模块</h2></div><button id="add-timeline-module" type="button">＋ 新增传闻</button></div>
+          <p class="section-help">每个模块展示一条传闻。勾选能够反驳它的调查点；玩家必须从已收集记录中选出这些证据。</p>
           <div id="timeline-editor"></div>
         </section>
 
         <section class="editor-section" data-editor-section="dream">
           <div class="section-heading"><div><p>04</p><h2>梦境</h2></div></div>
-          <div class="form-grid"><label>初始形态<select data-path="dream.initialForm"><option value="black">黑底</option><option value="white">白底</option></select></label></div>
-          <div class="rule-card"><b>另一形态的解锁规则已经固定：</b><p>完成指定的现实时间线，并调查当前梦境形态的关键点后，光点切换才会开放。</p></div>
+          <div class="form-grid"><label>初始形态<select data-path="dream.initialForm"><option value="black">黑底</option><option value="white">白底</option></select></label><label>首次梦境所需关键线索<input data-path="dream.unlockAtKeyClues" type="number" min="1"></label><label>另一形态所需关键线索<input data-path="dream.secondFormRequiredKeyClues" type="number" min="1"></label></div>
+          <div class="rule-card"><b>梦境会随现实调查逐步更新：</b><p>达到首次梦境线索数后出现休息提示；另一形态还需要现实进度和当前梦境调查点同时满足。</p></div>
           <div id="dream-visual-editor"></div>
           <details><summary>预留对话模块（当前关闭）</summary><label class="toggle-label"><input data-path="dream.dialogueEnabled" type="checkbox" />以后启用梦境对话</label><p class="section-help">现在不会显示任何对话。这项只保留代码位置。</p></details>
         </section>
 
         <section class="editor-section" data-editor-section="history">
           <div class="section-heading"><div><p>05</p><h2>完整历史正文</h2></div><button id="add-history" type="button">＋ 新增段落</button></div>
-          <p class="section-help">时间线只显示事件概括；全部复原后，玩家会自动翻到这里填写的完整故事纸页。每段也可以搭配一张图片。</p>
+          <p class="section-help">传闻勘误只展示调查结论；全部更正后，玩家会自动翻到这里填写的完整故事纸页。每段也可以搭配一张图片。</p>
           <div id="history-editor"></div>
         </section>
 

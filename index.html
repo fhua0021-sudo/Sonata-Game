@@ -50,6 +50,7 @@
             </header>
             <p class="prologue-date" id="mail-term">秋季学期 · 独立研究许可</p>
             <div class="letter-body" id="mail-body"></div>
+            <blockquote class="opening-rumor"><span>当前流传最广的说法</span><p id="opening-rumor"></p></blockquote>
             <footer class="letter-signature"><span id="mail-signature">导师办公室</span><i aria-hidden="true"></i></footer>
             <div class="letter-action">
               <small>研究身份：音乐史系学生</small>
@@ -118,8 +119,8 @@
           <button type="button" data-view="desk">书桌</button>
           <button class="is-current" type="button" data-view="map">地图</button>
           <button type="button" data-view="notebook">调查簿</button>
-          <button type="button" data-view="timeline">时间线</button>
-          <button class="is-locked" type="button" data-view="dream" aria-label="梦境记录，尚未解锁">梦境</button>
+          <button type="button" data-view="timeline">传闻勘误</button>
+          <button class="is-hidden" type="button" data-view="dream" aria-label="梦境记录">梦境<i class="nav-update-dot" aria-hidden="true"></i></button>
         </nav>
 
         <section class="scene-layer" id="scene-layer" aria-label="地点调查" aria-hidden="true">
@@ -160,8 +161,8 @@
             <header><p>PRIVATE STUDY</p><h2>调查书桌</h2></header>
             <div class="desk-grid">
               <button class="desk-item" data-open-panel="notebook-panel" type="button"><span>01</span><b>调查簿</b><small>查看自动归档的记录</small></button>
-              <button class="desk-item" data-open-panel="timeline-panel" type="button"><span>02</span><b>历史复原</b><small>整理关键事件的先后顺序</small></button>
-              <button class="desk-item is-locked" id="dream-desk-item" data-open-panel="dream-panel" type="button"><span>03</span><b>梦境记录</b><small>尚未解锁</small></button>
+              <button class="desk-item" data-open-panel="timeline-panel" type="button"><span>02</span><b>传闻勘误</b><small>用调查记录纠正流传的说法</small></button>
+              <button class="desk-item is-hidden" id="dream-desk-item" data-open-panel="dream-panel" type="button"><span>03</span><b>梦境记录</b><small>随时重新进入</small></button>
             </div>
           </div>
         </section>
@@ -171,7 +172,7 @@
             <header class="page-header"><div><p>RESEARCH NOTES</p><h2>调查簿</h2></div><button class="panel-close" type="button">返回地图</button></header>
             <div class="notebook-tabs" role="tablist">
               <button class="is-current" data-note-tab="records" type="button">调查记录</button>
-              <button data-note-tab="history" type="button">已复原历史</button>
+              <button data-note-tab="history" type="button">已更正传闻</button>
               <button data-note-tab="dreams" type="button">梦境记录</button>
             </div>
             <div class="notebook-content" id="notebook-content"></div>
@@ -180,13 +181,15 @@
 
         <section class="panel-layer" id="timeline-panel" aria-hidden="true">
           <div class="panel-page timeline-page">
-            <header class="page-header"><div><p>CHRONOLOGY</p><h2>复原时间线</h2></div><button class="panel-close" type="button">返回地图</button></header>
-            <p class="timeline-intro" id="timeline-intro">收集全部关键记录后，可以在这里尝试还原历史。</p>
-            <div class="timeline-modules" id="timeline-modules" aria-label="历史复原模块"></div>
-            <div class="timeline-cards" id="timeline-cards"></div>
+            <header class="page-header"><div><p>ERRATA</p><h2>传闻勘误</h2></div><button class="panel-close" type="button">返回地图</button></header>
+            <p class="timeline-intro" id="timeline-intro">选择真正与传闻相悖的调查记录。</p>
+            <div class="timeline-modules" id="timeline-modules" aria-label="传闻勘误模块"></div>
+            <blockquote class="rumor-statement" id="rumor-statement"></blockquote>
+            <div class="timeline-cards" id="timeline-cards" aria-label="已收集的证据"></div>
+            <div class="correction-result" id="correction-result" hidden></div>
             <div class="timeline-actions">
-              <button class="secondary-button" id="timeline-hint" type="button">获得提示</button>
-              <button class="primary-button light" id="timeline-submit" type="button">确认顺序</button>
+              <button class="secondary-button" id="timeline-hint" type="button">调查提示</button>
+              <button class="primary-button light" id="timeline-submit" type="button">提交勘误</button>
             </div>
           </div>
         </section>
@@ -200,6 +203,32 @@
             <div id="dream-hotspot-layer"></div>
             <button class="light-switch" id="light-switch" type="button" aria-label="切换梦境形态" disabled><i></i><span>光点尚未回应</span></button>
             <p class="dream-caption" id="dream-caption">他没有开口。远处却传来一段无法辨认的旋律。</p>
+          </div>
+        </section>
+
+        <section class="dream-intro-layer" id="dream-intro-layer" aria-hidden="true">
+          <div class="dream-intro-copy">
+            <p>你伏在尚未整理完的记录旁，短暂地合上了眼。</p>
+            <p>梦境里，忽然传来一阵悠扬而陌生的乐声……</p>
+            <div class="dream-listening"><i></i><span>正在聆听</span></div>
+          </div>
+        </section>
+
+        <section class="guide-modal" id="dream-rest-prompt" aria-hidden="true">
+          <div class="guide-card rest-card">
+            <p>RESEARCH PAUSE</p>
+            <h2>已经调查很久了</h2>
+            <p>眼前的记录开始变得模糊。或许应该暂时停下，让纷乱的思绪沉静片刻。</p>
+            <button class="primary-button light" id="dream-rest" type="button">休息片刻</button>
+          </div>
+        </section>
+
+        <section class="guide-modal" id="dream-guide" aria-hidden="true">
+          <div class="guide-card">
+            <p>NEW RECORD</p>
+            <h2>梦境已被记录</h2>
+            <p>此后可以随时从导航栏重返梦境。现实调查每推进一步，梦中的细节也可能随之显现；看到新的回响时，记得回来查看。</p>
+            <button class="primary-button light" id="dream-guide-close" type="button">我知道了</button>
           </div>
         </section>
 
@@ -244,4 +273,3 @@
     <script src="game.js"></script>
   </body>
 </html>
-

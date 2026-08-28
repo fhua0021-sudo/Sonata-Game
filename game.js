@@ -5,7 +5,7 @@ const CONTENT = (() => {
   }
   return window.SONATA_CONTENT;
 })();
-const SAVE_KEY = "sonata-game-progress-v1";
+const SAVE_KEY = "sonata-game-progress-v2";
 
 const screens = [...document.querySelectorAll(".screen")];
 const toast = document.querySelector("#toast");
@@ -31,16 +31,20 @@ let currentLocation = null;
 let currentSceneIndex = 0;
 let zoom = 1;
 let pan = { x: 0, y: 0 };
-let dragging = null;
-let timelineOrders = {};
 let activeTimelineModuleId = null;
+let selectedEvidenceIds = new Set();
 
 const defaultState = {
   sound: true,
   reduceMotion: false,
   foundClues: [],
-  timelineSolved: false,
-  timelineSolvedModules: [],
+  rumorSolved: false,
+  correctedRumorModules: [],
+  dreamUnlocked: false,
+  dreamPrompted: false,
+  dreamGuidanceSeen: false,
+  dreamUpdatePending: false,
+  dreamLastKeyCount: 0,
   dreamVisited: false,
   dreamHotspotFound: false,
   dreamFoundForms: [],
@@ -54,16 +58,14 @@ let state = loadState();
 
 function loadState() {
   try {
-    const loaded = { ...defaultState, ...JSON.parse(localStorage.getItem(SAVE_KEY) || "{}") };
-    if (loaded.timelineSolved && !loaded.timelineSolvedModules.length) loaded.timelineSolvedModules = getTimelineModules().map((module) => module.id);
-    return loaded;
+    return { ...JSON.parse(JSON.stringify(defaultState)), ...JSON.parse(localStorage.getItem(SAVE_KEY) || "{}") };
   } catch {
-    return { ...defaultState };
+    return JSON.parse(JSON.stringify(defaultState));
   }
 }
 
 function saveState() {
-  state.timelineSolved = areAllModulesSolved();
+  state.rumorSolved = areAllModulesSolved();
   localStorage.setItem(SAVE_KEY, JSON.stringify(state));
   updateProgressUI();
 }
@@ -90,7 +92,7 @@ function ensureAudio() {
   if (audioContext?.state === "suspended") audioContext.resume();
 }
 
-function playInkScratch(duration = 0.075, volume = 0.024) {
+function playInkScratch(duration = 0.09, volume = 0.055) {
   if (!state.sound) return;
   ensureAudio();
   if (!audioContext) return;
@@ -114,9 +116,9 @@ function playInkScratch(duration = 0.075, volume = 0.024) {
   bandpass.type = "bandpass";
   bandpass.frequency.setValueAtTime(1850, now);
   bandpass.frequency.linearRampToValueAtTime(2350, now + duration);
-  bandpass.Q.setValueAtTime(0.72, now);
+  bandpass.Q.setValueAtTime(0.38, now);
   gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.linearRampToValueAtTime(volume, now + 0.009);
+  gain.gain.linearRampToValueAtTime(volume, now + 0.006);
   gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
   source.connect(highpass).connect(bandpass).connect(gain).connect(audioContext.destination);
   source.start(now);
@@ -198,7 +200,7 @@ function playHoverCue(kind) {
 }
 
 function playConfirmCue() {
-  playInkScratch(0.09, 0.03);
+  playInkScratch(0.105, 0.052);
 }
 
 function playTimelineSuccessCue() {
@@ -217,6 +219,7 @@ function renderPrologue() {
   document.querySelector("#mail-subject").textContent = subject;
   document.querySelector("#mail-term").textContent = prologue.term || "秋季学期 · 独立研究许可";
   document.querySelector("#mail-signature").textContent = prologue.signature || sender;
+  document.querySelector("#opening-rumor").textContent = prologue.rumor || "“琴”从诞生起便只会招致灾难。";
   const paragraphs = String(prologue.body || "你的研究申请已经通过。请从中央档案馆开始调查。").split(/\n\s*\n/).filter(Boolean);
   document.querySelector("#mail-body").innerHTML = paragraphs.map((paragraph) => `<p>${paragraph.replace(/\n/g, "<br>")}</p>`).join("");
 }
@@ -261,12 +264,11 @@ function getScenes(location) {
 }
 
 function getTimelineModules() {
-  if (CONTENT.timelineModules?.length) return CONTENT.timelineModules;
-  return [{ id: "history", title: "历史复原", intro: "整理关键事件的先后顺序。", requiredKeyClues: CONTENT.keyClueGoal, events: CONTENT.timeline || [] }];
+  return CONTENT.rumorModules || [];
 }
 
 function isModuleUnlocked(module) { return getKeyCount() >= (module.requiredKeyClues || 0); }
-function isModuleSolved(moduleId) { return state.timelineSolvedModules.includes(moduleId); }
+function isModuleSolved(moduleId) { return state.correctedRumorModules.includes(moduleId); }
 function areAllModulesSolved() { return getTimelineModules().every((module) => isModuleSolved(module.id)); }
 
 function getFoundClues() { return getAllClues().filter((clue) => state.foundClues.includes(clue.id)); }
@@ -286,11 +288,11 @@ function updateProgressUI() {
   document.body.classList.toggle("reduce-motion", state.reduceMotion);
   const dreamButton = document.querySelector('[data-view="dream"]');
   const dreamDeskItem = document.querySelector("#dream-desk-item");
-  const unlocked = state.timelineSolved;
-  dreamButton.classList.toggle("is-locked", !unlocked);
-  dreamButton.setAttribute("aria-label", unlocked ? "梦境记录" : "梦境记录，尚未解锁");
-  dreamDeskItem.classList.toggle("is-locked", !unlocked);
-  dreamDeskItem.querySelector("small").textContent = unlocked ? "重新进入梦境" : "尚未解锁";
+  dreamButton.classList.toggle("is-hidden", !state.dreamUnlocked);
+  dreamDeskItem.classList.toggle("is-hidden", !state.dreamUnlocked);
+  dreamButton.classList.toggle("has-update", state.dreamUpdatePending);
+  dreamButton.setAttribute("aria-label", state.dreamUpdatePending ? "梦境记录，有新变化" : "梦境记录");
+  dreamDeskItem.querySelector("small").textContent = state.dreamUpdatePending ? "有新的细节显现" : "随时重新进入";
   document.querySelectorAll(".map-pin[data-location]").forEach((pin) => {
     const location = CONTENT.locations[pin.dataset.location];
     const locationUnlocked = isLocationUnlocked(pin.dataset.location);
@@ -380,8 +382,17 @@ function discoverClue(clue, button) {
   if (isNew && newlyUnlocked.length) {
     window.setTimeout(() => showToast(`【${newlyUnlocked.map(([, location]) => location.name).join("、")}已解锁】`), 420);
   }
-  if (isNew && getKeyCount() >= CONTENT.keyClueGoal) {
-    window.setTimeout(() => showToast("关键记录已齐全，可以尝试还原历史。", "前往复原", () => openPanel("timeline-panel")), newlyUnlocked.length ? 1700 : 650);
+  const dreamThreshold = CONTENT.dream.unlockAtKeyClues || Math.ceil(CONTENT.keyClueGoal / 2);
+  if (isNew && clue.kind === "key" && currentKeyCount >= dreamThreshold && !state.dreamPrompted) {
+    window.setTimeout(showDreamRestPrompt, newlyUnlocked.length ? 1650 : 520);
+  } else if (isNew && clue.kind === "key" && state.dreamVisited && currentKeyCount > state.dreamLastKeyCount) {
+    state.dreamUpdatePending = true;
+    state.dreamLastKeyCount = currentKeyCount;
+    saveState();
+    window.setTimeout(() => showToast("【梦境有新变化】现实中的发现，似乎在梦里留下了回响。", "前往梦境", () => openPanel("dream-panel")), 520);
+  }
+  if (isNew && currentKeyCount >= CONTENT.keyClueGoal) {
+    window.setTimeout(() => showToast("关键记录已齐全，可以开始更正流传的说法。", "前往勘误", () => openPanel("timeline-panel")), state.dreamVisited ? 1750 : 900);
   }
 }
 
@@ -404,8 +415,8 @@ function renderNotebook(tab) {
   } else if (tab === "history") {
     const solvedModules = getTimelineModules().filter((module) => isModuleSolved(module.id));
     content.innerHTML = solvedModules.length
-      ? `<div class="record-group"><h3>第一阶段：残存记录</h3>${solvedModules.map((module) => `<div class="record-entry"><b>已复原</b><div><strong>${module.title}</strong><p>${module.intro}</p></div></div>`).join("")}${state.timelineSolved ? '<div class="record-entry"><b>完整</b><div><strong>全部小节已经复原</strong><p>完整的研究稿已经可以阅读。</p><button class="text-button" data-read-history type="button">阅读复原稿</button></div></div>' : ""}</div>`
-      : '<div class="empty-state"><p>尚未复原任何历史。<br>关键事件需要由你排列。</p></div>';
+      ? `<div class="record-group"><h3>第一阶段：传闻勘误</h3>${solvedModules.map((module) => `<div class="record-entry"><b>已更正</b><div><strong>${module.title}</strong><p>${module.correction}</p></div></div>`).join("")}${state.rumorSolved ? '<div class="record-entry"><b>完整</b><div><strong>全部传闻已经完成勘误</strong><p>完整的研究稿已经可以阅读。</p><button class="text-button" data-read-history type="button">阅读复原稿</button></div></div>' : ""}</div>`
+      : '<div class="empty-state"><p>尚未更正任何传闻。<br>先在现实中收集能够相互印证的记录。</p></div>';
     content.querySelector("[data-read-history]")?.addEventListener("click", () => openPanel("history-panel"));
   } else {
     content.innerHTML = state.dreamVisited
@@ -419,9 +430,12 @@ function renderTimeline() {
   const container = document.querySelector("#timeline-cards");
   const intro = document.querySelector("#timeline-intro");
   const moduleContainer = document.querySelector("#timeline-modules");
+  const rumor = document.querySelector("#rumor-statement");
+  const result = document.querySelector("#correction-result");
   const modules = getTimelineModules();
   if (!activeTimelineModuleId || !modules.some((module) => module.id === activeTimelineModuleId)) {
     activeTimelineModuleId = modules.find((module) => isModuleUnlocked(module) && !isModuleSolved(module.id))?.id || modules[0]?.id;
+    selectedEvidenceIds = new Set();
   }
   moduleContainer.innerHTML = "";
   modules.forEach((module) => {
@@ -432,107 +446,160 @@ function renderTimeline() {
     button.classList.toggle("is-current", module.id === activeTimelineModuleId);
     button.classList.toggle("is-solved", isModuleSolved(module.id));
     button.classList.toggle("is-locked", !unlocked);
-    button.innerHTML = `<b>${module.title}</b><small>${unlocked ? module.intro : `需要 ${module.requiredKeyClues} 条关键线索`}</small>`;
+    button.innerHTML = `<b>${module.title}</b><small>${unlocked ? (isModuleSolved(module.id) ? "更正已经归档" : "等待核对证据") : `需要 ${module.requiredKeyClues} 条关键线索`}</small>`;
     button.addEventListener("click", () => {
       if (!unlocked) { showToast("这个小节所需的记录还没有收集齐。 "); return; }
       activeTimelineModuleId = module.id;
+      selectedEvidenceIds = new Set();
       renderTimeline();
     });
     moduleContainer.appendChild(button);
   });
   const activeModule = modules.find((module) => module.id === activeTimelineModuleId) || modules[0];
-  if (!activeModule) { container.innerHTML = ""; return; }
+  if (!activeModule) { container.innerHTML = ""; rumor.textContent = "尚未设置传闻。"; return; }
   const ready = isModuleUnlocked(activeModule);
   const solved = isModuleSolved(activeModule.id);
-  if (!timelineOrders[activeModule.id]) {
-    timelineOrders[activeModule.id] = [...activeModule.events].sort(() => Math.random() - 0.5).map((item) => item.id);
-    if (timelineOrders[activeModule.id].every((id, index) => id === activeModule.events[index].id)) timelineOrders[activeModule.id].reverse();
-  }
-  const timelineOrder = timelineOrders[activeModule.id];
-  intro.textContent = solved ? `${activeModule.title}已经复原。可以选择其他小节。` : ready ? activeModule.intro : `还需要 ${Math.max(0, activeModule.requiredKeyClues - getKeyCount())} 条关键线索才能打开这个小节。`;
+  rumor.textContent = activeModule.rumor;
+  rumor.classList.toggle("is-corrected", solved);
+  intro.textContent = solved ? "这条传闻已经完成勘误。可以继续核对其他说法。" : ready ? "从已经收集的记录中，选出真正能够反驳这条传闻的证据。" : `还需要 ${Math.max(0, activeModule.requiredKeyClues - getKeyCount())} 条关键线索才能核对这条传闻。`;
+  result.hidden = !solved;
+  result.innerHTML = solved ? `<span>更正后的结论</span><p>${activeModule.correction}</p>` : "";
   container.innerHTML = "";
-  timelineOrder.forEach((id, index) => {
-    const item = activeModule.events.find((entry) => entry.id === id);
-    const card = document.createElement("article");
-    card.className = "timeline-card";
-    card.draggable = ready && !solved;
-    card.dataset.id = id;
-    card.innerHTML = `<span class="timeline-number">${index + 1}</span><div><h3>${item.title}</h3><p>${item.text}</p></div><div class="card-moves"><button type="button" data-move="up" aria-label="向前移动">↑</button><button type="button" data-move="down" aria-label="向后移动">↓</button></div>`;
-    card.addEventListener("dragstart", () => { dragging = id; });
-    card.addEventListener("dragover", (event) => event.preventDefault());
-    card.addEventListener("drop", () => moveTimelineItem(dragging, id));
-    card.querySelector('[data-move="up"]').addEventListener("click", () => moveBy(index, -1));
-    card.querySelector('[data-move="down"]').addEventListener("click", () => moveBy(index, 1));
+  const found = getFoundClues();
+  if (!found.length) container.innerHTML = '<div class="empty-state"><p>还没有能够用于核对的调查记录。</p></div>';
+  found.forEach((clue) => {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "evidence-card";
+    card.classList.toggle("is-selected", selectedEvidenceIds.has(clue.id));
+    card.classList.toggle("is-confirmed", solved && (activeModule.evidenceIds || []).includes(clue.id));
+    card.disabled = !ready || solved;
+    card.innerHTML = `<span>${clue.kind === "key" ? "关键记录" : "补充资料"}</span><div><h3>${clue.title}</h3><p>${clue.text}</p><small>${clue.locationName} · ${clue.sceneTitle}</small></div>`;
+    card.addEventListener("click", () => {
+      if (selectedEvidenceIds.has(clue.id)) selectedEvidenceIds.delete(clue.id);
+      else selectedEvidenceIds.add(clue.id);
+      renderTimeline();
+    });
     container.appendChild(card);
   });
-  document.querySelector("#timeline-submit").disabled = !ready || solved;
-}
-
-function moveTimelineItem(fromId, toId) {
-  const activeModule = getTimelineModules().find((module) => module.id === activeTimelineModuleId);
-  if (!fromId || fromId === toId || !activeModule || isModuleSolved(activeModule.id)) return;
-  const timelineOrder = timelineOrders[activeModule.id];
-  const from = timelineOrder.indexOf(fromId);
-  const to = timelineOrder.indexOf(toId);
-  timelineOrder.splice(from, 1);
-  timelineOrder.splice(to, 0, fromId);
-  renderTimeline();
-}
-
-function moveBy(index, direction) {
-  const activeModule = getTimelineModules().find((module) => module.id === activeTimelineModuleId);
-  if (!activeModule || isModuleSolved(activeModule.id)) return;
-  const timelineOrder = timelineOrders[activeModule.id];
-  const target = index + direction;
-  if (target < 0 || target >= timelineOrder.length) return;
-  [timelineOrder[index], timelineOrder[target]] = [timelineOrder[target], timelineOrder[index]];
-  renderTimeline();
+  document.querySelector("#timeline-submit").disabled = !ready || solved || !selectedEvidenceIds.size;
 }
 
 function submitTimeline() {
   const activeModule = getTimelineModules().find((module) => module.id === activeTimelineModuleId);
   if (!activeModule) return;
-  const timelineOrder = timelineOrders[activeModule.id];
-  const correct = [...activeModule.events].sort((a, b) => a.order - b.order).map((item) => item.id);
-  if (timelineOrder.every((id, index) => id === correct[index])) {
-    if (!state.timelineSolvedModules.includes(activeModule.id)) state.timelineSolvedModules.push(activeModule.id);
-    state.timelineSolved = areAllModulesSolved();
+  const correct = new Set(activeModule.evidenceIds || []);
+  const selectionCorrect = correct.size === selectedEvidenceIds.size && [...correct].every((id) => selectedEvidenceIds.has(id));
+  if (selectionCorrect) {
+    if (!state.correctedRumorModules.includes(activeModule.id)) state.correctedRumorModules.push(activeModule.id);
+    state.rumorSolved = areAllModulesSolved();
     saveState();
     playTimelineSuccessCue();
-    if (state.timelineSolved) {
-      showToast("【完整故事页已解锁】时间线只是概括，研究稿正在展开。");
+    if (state.rumorSolved) {
+      showToast("【完整故事页已解锁】传闻已经逐一更正，研究稿正在展开。");
       window.setTimeout(() => {
         openPanel("history-panel");
         document.querySelector("#history-panel").classList.add("is-revealing");
         window.setTimeout(() => document.querySelector("#history-panel").classList.remove("is-revealing"), 900);
       }, state.reduceMotion ? 100 : 760);
     }
-    else showToast(`${activeModule.title}已经复原，可以继续整理下一小节。`);
+    else showToast(`${activeModule.title}已经更正，结论已收入调查簿。`);
     renderTimeline();
   } else {
-    document.querySelectorAll(".timeline-card").forEach((card) => {
+    document.querySelectorAll(".evidence-card.is-selected").forEach((card) => {
       card.classList.remove("is-shaking");
       void card.offsetWidth;
       card.classList.add("is-shaking");
     });
     playTone(220, .1);
-    showToast("顺序仍有矛盾，可以重新尝试。");
+    showToast("这些记录还不足以直接反驳传闻，再核对一次。");
   }
 }
 
+function playDreamPrelude() {
+  if (!state.sound) return 3000;
+  ensureAudio();
+  if (!audioContext) return 3000;
+  const now = audioContext.currentTime + 0.08;
+  const notes = [392, 493.88, 587.33, 523.25, 659.25];
+  notes.forEach((frequency, index) => {
+    const start = now + index * 0.82;
+    const duration = index === notes.length - 1 ? 1.45 : 1.15;
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    const filter = audioContext.createBiquadFilter();
+    const real = new Float32Array([0, 0, 0, 0, 0, 0]);
+    const imag = new Float32Array([0, 1, 0.42, 0.2, 0.09, 0.035]);
+    oscillator.setPeriodicWave(audioContext.createPeriodicWave(real, imag));
+    oscillator.frequency.setValueAtTime(frequency, start);
+    oscillator.frequency.linearRampToValueAtTime(frequency * 1.004, start + duration * 0.55);
+    oscillator.frequency.linearRampToValueAtTime(frequency, start + duration);
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(1850, start);
+    filter.Q.setValueAtTime(1.1, start);
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(0.026, start + 0.16);
+    gain.gain.setValueAtTime(0.021, start + duration * 0.68);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+    oscillator.connect(filter).connect(gain).connect(audioContext.destination);
+    oscillator.start(start);
+    oscillator.stop(start + duration + 0.03);
+  });
+  return 4850;
+}
+
+function showDreamRestPrompt() {
+  if (state.dreamPrompted || state.dreamUnlocked) return;
+  const prompt = document.querySelector("#dream-rest-prompt");
+  prompt.classList.add("is-open");
+  prompt.setAttribute("aria-hidden", "false");
+}
+
+function beginDreamIntro() {
+  const prompt = document.querySelector("#dream-rest-prompt");
+  prompt.classList.remove("is-open");
+  prompt.setAttribute("aria-hidden", "true");
+  sceneLayer.classList.remove("is-open");
+  clueCard.classList.remove("is-open");
+  closePanels();
+  state.dreamUnlocked = true;
+  state.dreamPrompted = true;
+  state.dreamLastKeyCount = getKeyCount();
+  state.dreamUpdatePending = false;
+  saveState();
+  const layer = document.querySelector("#dream-intro-layer");
+  layer.classList.add("is-open");
+  layer.setAttribute("aria-hidden", "false");
+  const duration = playDreamPrelude();
+  window.setTimeout(() => {
+    layer.classList.remove("is-open");
+    layer.setAttribute("aria-hidden", "true");
+    openPanel("dream-panel");
+  }, state.reduceMotion ? Math.min(duration, 1800) : duration);
+}
+
+function showDreamGuide() {
+  const guide = document.querySelector("#dream-guide");
+  guide.classList.add("is-open");
+  guide.setAttribute("aria-hidden", "false");
+}
+
 function renderDream() {
-  if (!state.timelineSolved) { showToast("现实中的研究尚未抵达梦境的入口。"); closePanels(); return; }
+  if (!state.dreamUnlocked) { closePanels(); return; }
   state.dreamVisited = true;
+  state.dreamUpdatePending = false;
+  state.dreamLastKeyCount = Math.max(state.dreamLastKeyCount, getKeyCount());
   saveState();
   const dream = document.querySelector("#dream-scene");
   dream.classList.toggle("is-black", state.dreamForm === "black");
   dream.classList.toggle("is-white", state.dreamForm === "white");
   const light = document.querySelector("#light-switch");
-  const initialHotspots = CONTENT.dream.hotspots?.[CONTENT.dream.initialForm] || [];
+  const initialHotspots = (CONTENT.dream.hotspots?.[CONTENT.dream.initialForm] || []).filter((spot) => getKeyCount() >= (spot.requiredKeyClues || 0));
   const initialFormInvestigated = initialHotspots.length > 0 && initialHotspots.every((spot) => state.dreamFoundHotspots.includes(spot.id));
-  light.disabled = !initialFormInvestigated;
-  light.querySelector("span").textContent = initialFormInvestigated ? (state.dreamForm === "black" ? "放出光点" : "收回光点") : "光点尚未回应";
-  const clues = CONTENT.dream.hotspots?.[state.dreamForm] || [];
+  const realityReady = getKeyCount() >= (CONTENT.dream.secondFormRequiredKeyClues || CONTENT.keyClueGoal);
+  light.disabled = !initialFormInvestigated || !realityReady;
+  light.querySelector("span").textContent = !initialFormInvestigated ? "光点尚未回应" : !realityReady ? "现实仍缺少一段回响" : (state.dreamForm === "black" ? "放出光点" : "收回光点");
+  const clues = (CONTENT.dream.hotspots?.[state.dreamForm] || []).filter((spot) => getKeyCount() >= (spot.requiredKeyClues || 0));
   const lightPosition = CONTENT.dream.lightPoint?.[state.dreamForm] || { x: 84, y: 84 };
   light.style.left = `${lightPosition.x}%`;
   light.style.top = `${lightPosition.y}%`;
@@ -556,7 +623,7 @@ function renderDream() {
 
 function discoverDreamClue(clue) {
   if (!state.dreamFoundHotspots.includes(clue.id)) state.dreamFoundHotspots.push(clue.id);
-  const formClues = CONTENT.dream.hotspots?.[state.dreamForm] || [];
+  const formClues = (CONTENT.dream.hotspots?.[state.dreamForm] || []).filter((spot) => getKeyCount() >= (spot.requiredKeyClues || 0));
   if (formClues.length && formClues.every((spot) => state.dreamFoundHotspots.includes(spot.id)) && !state.dreamFoundForms.includes(state.dreamForm)) {
     state.dreamFoundForms.push(state.dreamForm);
   }
@@ -597,6 +664,8 @@ document.querySelector("#enter-map").addEventListener("click", () => {
   const firstId = CONTENT.prologue?.firstLocation || Object.keys(CONTENT.locations)[0];
   const firstLocation = CONTENT.locations[firstId];
   if (firstLocation) window.setTimeout(() => showToast(`【${firstLocation.name}已解锁】导师建议先从这里开始。`), 300);
+  const dreamThreshold = CONTENT.dream.unlockAtKeyClues || Math.ceil(CONTENT.keyClueGoal / 2);
+  if (getKeyCount() >= dreamThreshold && !state.dreamPrompted) window.setTimeout(showDreamRestPrompt, 900);
 });
 document.querySelectorAll(".map-pin").forEach((pin, index) => {
   pin.addEventListener("pointerenter", () => { if (!isLocationUnlocked(pin.dataset.location)) return; stopActiveTone(); playPizzicato([523.25, 587.33, 466.16][index], .024); });
@@ -629,25 +698,32 @@ document.querySelectorAll(".game-nav button").forEach((button) => {
   button.addEventListener("click", () => {
     const view = button.dataset.view;
     if (view === "map") { closePanels(); return; }
-    if (view === "dream" && !state.timelineSolved) { playTone(246.94, .09); showToast("尚未做梦。继续调查现实中的关键记录。"); return; }
+    if (view === "dream" && !state.dreamUnlocked) return;
     const target = { desk: "desk-panel", notebook: "notebook-panel", timeline: "timeline-panel", dream: "dream-panel" }[view];
     if (target) openPanel(target);
   });
 });
 document.querySelectorAll("[data-open-panel]").forEach((button) => button.addEventListener("click", () => {
-  if (button.classList.contains("is-locked")) { showToast("梦境尚未解锁。"); return; }
+  if (button.dataset.openPanel === "dream-panel" && !state.dreamUnlocked) return;
   openPanel(button.dataset.openPanel);
 }));
-document.querySelectorAll(".panel-close").forEach((button) => button.addEventListener("click", () => { closePanels(); document.body.classList.remove("custom-cursor-active"); }));
+document.querySelectorAll(".panel-close").forEach((button) => button.addEventListener("click", () => {
+  const leavingFirstDream = Boolean(button.closest("#dream-panel")) && state.dreamVisited && !state.dreamGuidanceSeen;
+  closePanels();
+  document.body.classList.remove("custom-cursor-active");
+  if (leavingFirstDream) {
+    state.dreamGuidanceSeen = true;
+    saveState();
+    window.setTimeout(showDreamGuide, 220);
+  }
+}));
 document.querySelectorAll("[data-note-tab]").forEach((button) => button.addEventListener("click", () => renderNotebook(button.dataset.noteTab)));
 document.querySelector("#timeline-submit").addEventListener("click", submitTimeline);
 document.querySelector("#timeline-hint").addEventListener("click", () => {
   const activeModule = getTimelineModules().find((module) => module.id === activeTimelineModuleId);
   if (!activeModule) return;
-  const timelineOrder = timelineOrders[activeModule.id];
-  const correct = [...activeModule.events].sort((a, b) => a.order - b.order);
-  const wrongIndex = timelineOrder.findIndex((id, index) => id !== correct[index].id);
-  showToast(wrongIndex < 0 ? "这份顺序已经没有明显矛盾。" : `“${activeModule.events.find((item) => item.id === timelineOrder[wrongIndex]).title}”的位置需要再考虑。`);
+  const missing = (activeModule.evidenceIds || []).filter((id) => !state.foundClues.includes(id)).length;
+  showToast(missing ? `还缺少 ${missing} 条能够直接反驳这条传闻的记录。` : "对照传闻中的绝对说法，寻找能证明“并非一直如此”的记录。 ");
 });
 document.querySelector("#light-switch").addEventListener("click", () => {
   state.dreamForm = state.dreamForm === "black" ? "white" : "black";
@@ -664,13 +740,19 @@ settingsMotion.addEventListener("change", () => { state.reduceMotion = settingsM
 document.querySelector("#reset-progress").addEventListener("click", () => {
   if (!window.confirm("确定清除这台设备上的全部调查进度吗？")) return;
   localStorage.removeItem(SAVE_KEY);
-  state = { ...defaultState };
-  timelineOrders = {};
+  state = JSON.parse(JSON.stringify(defaultState));
+  selectedEvidenceIds = new Set();
   activeTimelineModuleId = null;
   closePanels();
   updateProgressUI();
   showToast("调查进度已经清除。");
 });
+document.querySelector("#dream-guide-close").addEventListener("click", () => {
+  const guide = document.querySelector("#dream-guide");
+  guide.classList.remove("is-open");
+  guide.setAttribute("aria-hidden", "true");
+});
+document.querySelector("#dream-rest").addEventListener("click", beginDreamIntro);
 document.querySelector("#finish-investigation").addEventListener("click", openCredits);
 document.querySelector("#credits-skip").addEventListener("click", () => {
   const credits = document.querySelector("#credits-layer");
