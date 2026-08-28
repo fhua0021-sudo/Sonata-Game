@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex,nofollow,noarchive,noimageindex" />
+    <meta name="theme-color" content="#171713" />
+    <meta
+      name="description"
+      content="《琴：遗失的和弦》——一场关于残缺乐谱与失落音乐史的探索。"
+    />
+    <title>琴：遗失的和弦</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main id="game" aria-live="polite">
+      <section class="screen opening-screen is-active" id="opening" aria-labelledby="game-title">
+        <div class="opening-grain" aria-hidden="true"></div>
+        <div class="opening-score" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i>
+          <b class="score-mark score-mark-one">♪</b>
+          <b class="score-mark score-mark-two">♩</b>
+        </div>
+        <div class="opening-copy">
+          <p class="eyebrow">一份未完成的音乐史调查</p>
+          <h1 id="game-title">琴</h1>
+          <p class="subtitle">遗失的和弦</p>
+          <p class="sound-hint">建议使用电脑并开启声音体验</p>
+          <button class="primary-button" id="start-game" type="button">开始调查</button>
+        </div>
+      </section>
+
+      <section class="screen prologue-screen" id="prologue" aria-label="调查缘起">
+        <div class="prologue-card">
+          <p class="prologue-date">秋季学期 · 私人调查记录</p>
+          <div class="prologue-lines" id="prologue-lines">
+            <p>音乐史在这里出现了一段不自然的空白。</p>
+            <p>那份曾经极为重要的曲谱，只剩下彼此矛盾的传闻。</p>
+            <p>如果旧记录仍散落在某处，也许能重新拼出它的来历。</p>
+            <p>我决定从城中尚未封闭的档案开始。</p>
+          </div>
+          <button class="text-button" id="enter-map" type="button">翻开地图</button>
+        </div>
+      </section>
+
+      <section class="screen map-screen" id="map-screen" aria-labelledby="map-title">
+        <header class="game-header">
+          <div>
+            <p class="chapter-label">第一章 · 残存记录</p>
+            <h2 id="map-title">调查地图</h2>
+          </div>
+          <div class="header-actions">
+            <span class="progress-copy">关键线索 <strong id="clue-count">0 / 3</strong></span>
+            <button class="icon-button" id="sound-toggle" type="button" aria-label="关闭声音" title="关闭声音">♫</button>
+            <button class="icon-button" id="settings-open" type="button" aria-label="打开设置" title="设置">⚙</button>
+          </div>
+        </header>
+
+        <div class="game-layout">
+          <aside class="case-panel" aria-label="当前调查">
+            <p class="panel-kicker">当前目标</p>
+            <h3>寻找音乐史断层的起点</h3>
+            <p>调查地图上开放的地点。关键记录会自动收入调查簿。</p>
+            <div class="case-rule"></div>
+            <p class="small-note">琴声有时比文字更接近真相。</p>
+          </aside>
+
+          <div class="map-wrap">
+            <div class="map-paper" aria-label="虚构国度调查地图">
+              <div class="paper-texture" aria-hidden="true"></div>
+              <div class="country-shape" aria-hidden="true"></div>
+              <div class="route route-a" aria-hidden="true"></div>
+              <div class="route route-b" aria-hidden="true"></div>
+
+              <button class="map-pin pin-archive" type="button" data-location="archive">
+                <span class="pin-dot"></span>
+                <span class="pin-label"><b>中央档案馆</b><small>可调查</small></span>
+              </button>
+              <button class="map-pin pin-theatre" type="button" data-location="theatre">
+                <span class="pin-dot"></span>
+                <span class="pin-label"><b>旧歌剧院</b><small>可调查</small></span>
+              </button>
+              <button class="map-pin pin-station" type="button" data-location="station">
+                <span class="pin-dot"></span>
+                <span class="pin-label"><b>北部车站</b><small>尚无线索</small></span>
+              </button>
+
+              <div class="map-caption">
+                <span>WESTERN DISTRICT</span>
+                <b>旧王国西部调查图</b>
+              </div>
+            </div>
+          </div>
+
+          <aside class="notes-panel" aria-label="调查便笺">
+            <div class="paper-note note-one">档案目录中，有一册年份被人为涂改。</div>
+            <div class="paper-note note-two">先查演出记录，再对照战前报刊。</div>
+          </aside>
+        </div>
+
+        <nav class="game-nav" aria-label="主要功能">
+          <button type="button" data-view="desk">书桌</button>
+          <button class="is-current" type="button" data-view="map">地图</button>
+          <button type="button" data-view="notebook">调查簿</button>
+          <button type="button" data-view="timeline">时间线</button>
+          <button class="is-locked" type="button" data-view="dream" aria-label="梦境记录，尚未解锁">梦境</button>
+        </nav>
+
+        <section class="scene-layer" id="scene-layer" aria-label="地点调查" aria-hidden="true">
+          <header class="layer-header">
+            <button class="back-button" id="scene-back" type="button">← 返回地图</button>
+            <div>
+              <p id="scene-location-label">调查地点</p>
+              <h2 id="scene-title">场景标题</h2>
+            </div>
+            <div class="scene-header-actions"><button id="scene-prev" type="button" aria-label="上一幅场景">‹</button><span id="scene-page">1 / 1</span><button id="scene-next" type="button" aria-label="下一幅场景">›</button><button class="observe-button" id="observe-toggle" type="button">观察模式</button></div>
+          </header>
+          <div class="scene-stage" id="scene-stage">
+            <div class="scene-art" id="scene-art">
+              <div class="scene-placeholder" id="scene-placeholder">
+                <span>SCENE ARTWORK</span>
+                <b>此处替换为完整场景稿件</b>
+              </div>
+              <div id="hotspot-layer"></div>
+            </div>
+            <div class="zoom-controls" aria-label="图像缩放">
+              <button type="button" id="zoom-out" aria-label="缩小">−</button>
+              <span id="zoom-value">100%</span>
+              <button type="button" id="zoom-in" aria-label="放大">＋</button>
+              <button type="button" id="zoom-reset">复位</button>
+            </div>
+          </div>
+          <aside class="clue-card" id="clue-card" aria-live="polite" aria-hidden="true">
+            <button id="clue-close" type="button" aria-label="关闭线索">×</button>
+            <p id="clue-type">关键线索</p>
+            <h3 id="clue-title">线索标题</h3>
+            <div class="clue-image-placeholder">线索图片</div>
+            <p id="clue-text">线索内容</p>
+          </aside>
+        </section>
+
+        <section class="panel-layer" id="desk-panel" aria-hidden="true">
+          <div class="panel-page desk-page">
+            <header><p>PRIVATE STUDY</p><h2>调查书桌</h2></header>
+            <div class="desk-grid">
+              <button class="desk-item" data-open-panel="notebook-panel" type="button"><span>01</span><b>调查簿</b><small>查看自动归档的记录</small></button>
+              <button class="desk-item" data-open-panel="timeline-panel" type="button"><span>02</span><b>历史复原</b><small>整理关键事件的先后顺序</small></button>
+              <button class="desk-item is-locked" id="dream-desk-item" data-open-panel="dream-panel" type="button"><span>03</span><b>梦境记录</b><small>尚未解锁</small></button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel-layer" id="notebook-panel" aria-hidden="true">
+          <div class="panel-page notebook-page">
+            <header class="page-header"><div><p>RESEARCH NOTES</p><h2>调查簿</h2></div><button class="panel-close" type="button">返回地图</button></header>
+            <div class="notebook-tabs" role="tablist">
+              <button class="is-current" data-note-tab="records" type="button">调查记录</button>
+              <button data-note-tab="history" type="button">已复原历史</button>
+              <button data-note-tab="dreams" type="button">梦境记录</button>
+            </div>
+            <div class="notebook-content" id="notebook-content"></div>
+          </div>
+        </section>
+
+        <section class="panel-layer" id="timeline-panel" aria-hidden="true">
+          <div class="panel-page timeline-page">
+            <header class="page-header"><div><p>CHRONOLOGY</p><h2>复原时间线</h2></div><button class="panel-close" type="button">返回地图</button></header>
+            <p class="timeline-intro" id="timeline-intro">收集全部关键记录后，可以在这里尝试还原历史。</p>
+            <div class="timeline-modules" id="timeline-modules" aria-label="历史复原模块"></div>
+            <div class="timeline-cards" id="timeline-cards"></div>
+            <div class="timeline-actions">
+              <button class="secondary-button" id="timeline-hint" type="button">获得提示</button>
+              <button class="primary-button light" id="timeline-submit" type="button">确认顺序</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel-layer dream-layer" id="dream-panel" aria-hidden="true">
+          <div class="dream-scene is-black" id="dream-scene">
+            <button class="panel-close dream-close" type="button">从梦中醒来</button>
+            <div class="dream-figure" aria-label="梦中的人形占位图">
+              <span>HUMAN FORM ARTWORK</span><b>此处替换为琴的人形稿件</b>
+            </div>
+            <div id="dream-hotspot-layer"></div>
+            <button class="light-switch" id="light-switch" type="button" aria-label="切换梦境形态" disabled><i></i><span>光点尚未回应</span></button>
+            <p class="dream-caption" id="dream-caption">他没有开口。远处却传来一段无法辨认的旋律。</p>
+          </div>
+        </section>
+
+        <section class="panel-layer" id="history-panel" aria-hidden="true">
+          <div class="panel-page history-page">
+            <header class="page-header"><div><p>RESTORED HISTORY</p><h2>复原稿：残存记录</h2></div><button class="panel-close" type="button">返回地图</button></header>
+            <article id="history-article"></article>
+            <button class="primary-button light" id="finish-investigation" type="button">调查完成</button>
+          </div>
+        </section>
+
+        <section class="panel-layer settings-layer" id="settings-panel" aria-hidden="true">
+          <div class="settings-card">
+            <header class="page-header"><div><p>SETTINGS</p><h2>设置</h2></div><button class="panel-close" type="button">关闭</button></header>
+            <label class="setting-row"><span><b>声音</b><small>短音提示与梦境音乐</small></span><input id="settings-sound" type="checkbox" checked /></label>
+            <label class="setting-row"><span><b>减少动态效果</b><small>关闭较明显的移动和切换动画</small></span><input id="settings-motion" type="checkbox" /></label>
+            <button class="danger-button" id="reset-progress" type="button">清除本机调查进度</button>
+          </div>
+        </section>
+
+        <section class="credits-layer" id="credits-layer" aria-hidden="true">
+          <button class="credits-skip" id="credits-skip" type="button">略过</button>
+          <div class="credits-roll" id="credits-roll">
+            <h2>琴</h2><p class="credits-subtitle">遗失的和弦</p>
+            <h3>策划／原案</h3><p>在此填写姓名</p>
+            <h3>画师</h3><p>在此填写姓名</p>
+            <h3>文手</h3><p>在此填写姓名</p>
+            <h3>音乐</h3><p>在此填写姓名</p>
+            <h3>特别感谢</h3><p>在此填写姓名</p>
+            <p class="credits-end">感谢你的调查。</p>
+            <button class="text-button credits-return" id="credits-return" type="button">返回标题页</button>
+          </div>
+        </section>
+
+        <div class="baton-cursor" id="baton-cursor" aria-hidden="true"><i></i></div>
+      </section>
+
+      <div class="toast" id="toast" role="status"><span id="toast-message"></span><button id="toast-action" type="button" hidden></button></div>
+    </main>
+    <script src="content.js"></script>
+    <script src="game.js"></script>
+  </body>
+</html>

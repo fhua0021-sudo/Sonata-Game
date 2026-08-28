@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>《琴》内容编辑页</title>
+    <link rel="stylesheet" href="editor.css" />
+  </head>
+  <body>
+    <header class="editor-header">
+      <div><p>SONATA CONTENT WORKBENCH</p><h1>《琴》内容编辑页</h1></div>
+      <div class="header-buttons">
+        <a href="index.html?editor-preview=1" target="_blank">打开游戏预览</a>
+        <button id="import-button" type="button">导入旧内容</button>
+        <button class="export-button" id="export-button" type="button">生成更新文件</button>
+        <input id="import-file" type="file" accept=".js,.json" hidden />
+      </div>
+    </header>
+
+    <div class="privacy-note">这里填写的草稿只保存在你当前的浏览器里。点击“生成更新文件”才会下载一个供你上传到 GitHub 的文件。</div>
+
+    <main class="editor-layout">
+      <nav class="editor-nav" aria-label="编辑栏目">
+        <button class="is-current" data-section="basic" type="button">基本信息</button>
+        <button data-section="locations" type="button">地点与场景</button>
+        <button data-section="timeline" type="button">时间线</button>
+        <button data-section="dream" type="button">梦境</button>
+        <button data-section="history" type="button">完整历史</button>
+        <button data-section="credits" type="button">感谢名单</button>
+      </nav>
+
+      <div class="editor-main">
+        <section class="editor-section is-active" data-editor-section="basic">
+          <div class="section-heading"><div><p>01</p><h2>基本信息</h2></div><span>修改后自动保存在本机</span></div>
+          <div class="form-grid">
+            <label>主标题<input data-path="title" type="text" /></label>
+            <label>副标题<input data-path="subtitle" type="text" /></label>
+            <label>本阶段关键线索数量<input data-path="keyClueGoal" type="number" min="1" /></label>
+          </div>
+        </section>
+
+        <section class="editor-section" data-editor-section="locations">
+          <div class="section-heading"><div><p>02</p><h2>地点与场景</h2></div><button id="add-location" type="button">＋ 新增地点</button></div>
+          <div class="location-workspace">
+            <aside class="item-list" id="location-list"></aside>
+            <div class="location-editor" id="location-editor"></div>
+          </div>
+        </section>
+
+        <section class="editor-section" data-editor-section="timeline">
+          <div class="section-heading"><div><p>03</p><h2>历史复原模块</h2></div><button id="add-timeline-module" type="button">＋ 新增小模块</button></div>
+          <p class="section-help">每个小模块都是一次独立的时间排序。模块中的正确顺序按照事件卡从上到下生成，玩家看到时会被打乱。</p>
+          <div id="timeline-editor"></div>
+        </section>
+
+        <section class="editor-section" data-editor-section="dream">
+          <div class="section-heading"><div><p>04</p><h2>梦境</h2></div></div>
+          <div class="form-grid"><label>初始形态<select data-path="dream.initialForm"><option value="black">黑底</option><option value="white">白底</option></select></label></div>
+          <div class="rule-card"><b>另一形态的解锁规则已经固定：</b><p>完成指定的现实时间线，并调查当前梦境形态的关键点后，光点切换才会开放。</p></div>
+          <div id="dream-visual-editor"></div>
+          <details><summary>预留对话模块（当前关闭）</summary><label class="toggle-label"><input data-path="dream.dialogueEnabled" type="checkbox" />以后启用梦境对话</label><p class="section-help">现在不会显示任何对话。这项只保留代码位置。</p></details>
+        </section>
+
+        <section class="editor-section" data-editor-section="history">
+          <div class="section-heading"><div><p>05</p><h2>完整历史正文</h2></div><button id="add-history" type="button">＋ 新增段落</button></div>
+          <div id="history-editor"></div>
+        </section>
+
+        <section class="editor-section" data-editor-section="credits">
+          <div class="section-heading"><div><p>06</p><h2>感谢名单</h2></div></div>
+          <p class="section-help">每行填写一个名字。游戏结束后会自动向上滚动。</p>
+          <div class="form-grid credits-grid">
+            <label>策划／原案<textarea data-credit="planning"></textarea></label>
+            <label>画师<textarea data-credit="artists"></textarea></label>
+            <label>文手<textarea data-credit="writers"></textarea></label>
+            <label>音乐<textarea data-credit="music"></textarea></label>
+            <label>特别感谢<textarea data-credit="thanks"></textarea></label>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <div class="save-indicator" id="save-indicator">已保存在本机</div>
+    <script src="content.js"></script>
+    <script src="editor.js"></script>
+  </body>
+</html>
