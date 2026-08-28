@@ -14,7 +14,9 @@ let saveTimer = null;
 function loadDraft() {
   try {
     const loaded = JSON.parse(localStorage.getItem(DRAFT_KEY)) || clone(window.SONATA_CONTENT);
+    if (!loaded.prologue) loaded.prologue = clone(window.SONATA_CONTENT.prologue);
     Object.values(loaded.locations || {}).forEach((location) => {
+      if (location.requiredKeyClues == null) location.requiredKeyClues = 0;
       if (!location.scenes) {
         location.scenes = [{ id: `scene-${Date.now()}`, title: location.sceneTitle || "新场景", artwork: location.artwork || "", placeholderTone: location.placeholderTone || "archive", hotspots: location.hotspots || [] }];
       }
@@ -54,6 +56,15 @@ document.querySelectorAll("[data-path]").forEach((input) => {
   input.addEventListener("input", () => setPath(input.dataset.path, input.type === "checkbox" ? input.checked : input.type === "number" ? Number(input.value) : input.value));
 });
 
+function renderFirstLocationSelect() {
+  const select = document.querySelector("#prologue-first-location");
+  if (!select) return;
+  select.innerHTML = Object.entries(draft.locations).map(([id, location]) => `<option value="${escapeHtml(id)}" ${draft.prologue.firstLocation === id ? "selected" : ""}>${escapeHtml(location.name || "未命名地点")}</option>`).join("");
+  if (!draft.locations[draft.prologue.firstLocation]) draft.prologue.firstLocation = Object.keys(draft.locations)[0] || "";
+  select.value = draft.prologue.firstLocation;
+  select.onchange = () => { draft.prologue.firstLocation = select.value; saveDraft(); };
+}
+
 document.querySelectorAll("[data-credit]").forEach((input) => {
   input.value = (draft.credits[input.dataset.credit] || []).join("\n");
   input.addEventListener("input", () => {
@@ -78,6 +89,7 @@ function renderLocations() {
     button.addEventListener("click", () => { activeLocation = id; activeSceneIndex = 0; activeHotspot = 0; renderLocations(); });
     list.appendChild(button);
   });
+  renderFirstLocationSelect();
   renderLocationEditor();
 }
 
@@ -88,7 +100,10 @@ function renderLocationEditor() {
   const scene = location.scenes[activeSceneIndex] || location.scenes[0];
   activeSceneIndex = Math.max(0, location.scenes.indexOf(scene));
   editor.innerHTML = `
-    <label>地点名称<input data-location-field="name" value="${escapeHtml(location.name || "")}"></label>
+    <div class="form-grid">
+      <label>地点名称<input data-location-field="name" value="${escapeHtml(location.name || "")}"></label>
+      <label>解锁所需关键线索<input data-location-field="requiredKeyClues" type="number" min="0" value="${location.requiredKeyClues || 0}"><small>填 0 表示开场即可进入；填 1 表示找到一条关键线索后解锁。</small></label>
+    </div>
     <div class="scene-picker">${location.scenes.map((item, index) => `<button class="${index === activeSceneIndex ? "is-current" : ""}" data-scene-index="${index}" type="button">场景 ${index + 1}</button>`).join("")}<button id="add-scene" type="button" ${location.scenes.length >= 3 ? "disabled" : ""}>＋ 新增场景</button></div>
     <div class="form-grid">
       <label>场景标题<input data-scene-field="title" value="${escapeHtml(scene.title || "")}"></label>
@@ -100,11 +115,12 @@ function renderLocationEditor() {
     <button class="remove-button" id="remove-scene" type="button" ${location.scenes.length === 1 ? "disabled" : ""}>删除当前场景</button>
     <button class="remove-button" id="remove-location" type="button">删除这个地点</button>`;
   editor.querySelectorAll("[data-location-field]").forEach((input) => input.addEventListener("input", () => {
-    location[input.dataset.locationField] = input.value;
+    location[input.dataset.locationField] = input.type === "number" ? Number(input.value) : input.value;
     saveDraft();
     if (input.dataset.locationField === "name") {
       const currentButton = document.querySelector("#location-list button.is-current");
       if (currentButton) currentButton.textContent = input.value || "未命名地点";
+      renderFirstLocationSelect();
     }
   }));
   editor.querySelectorAll("[data-scene-field]").forEach((input) => input.addEventListener("input", () => { scene[input.dataset.sceneField] = input.value; saveDraft(); }));
@@ -191,7 +207,7 @@ function renderHistoryEditor() {
   draft.history.forEach((item, index) => {
     const row = document.createElement("div");
     row.className = "history-edit-row";
-    row.innerHTML = `<input data-field="title" value="${escapeHtml(item.title || "")}" aria-label="段落标题"><textarea data-field="text" aria-label="段落正文">${escapeHtml(item.text || "")}</textarea><button class="remove-button" type="button">删除</button>`;
+    row.innerHTML = `<div class="history-meta-fields"><input data-field="title" value="${escapeHtml(item.title || "")}" aria-label="段落标题"><input data-field="artwork" value="${escapeHtml(item.artwork || "")}" placeholder="可选：assets/history-01.jpg" aria-label="段落配图文件名"></div><textarea data-field="text" aria-label="段落正文">${escapeHtml(item.text || "")}</textarea><button class="remove-button" type="button">删除</button>`;
     row.querySelectorAll("[data-field]").forEach((input) => input.addEventListener("input", () => { item[input.dataset.field] = input.value; saveDraft(); }));
     row.querySelector("button").addEventListener("click", () => { draft.history.splice(index, 1); saveDraft(); renderHistoryEditor(); });
     container.appendChild(row);
@@ -266,7 +282,7 @@ function escapeHtml(value) { return String(value).replace(/[&<>'"]/g, (character
 
 document.querySelector("#add-location").addEventListener("click", () => {
   const id = `location-${Date.now()}`;
-  draft.locations[id] = { name: "新地点", scenes: [{ id: `${id}-scene-1`, title: "新场景", artwork: "", placeholderTone: "archive", hotspots: [] }] };
+  draft.locations[id] = { name: "新地点", requiredKeyClues: 0, scenes: [{ id: `${id}-scene-1`, title: "新场景", artwork: "", placeholderTone: "archive", hotspots: [] }] };
   activeLocation = id; activeSceneIndex = 0; saveDraft(); renderLocations();
 });
 document.querySelector("#add-timeline-module").addEventListener("click", () => {
@@ -278,7 +294,7 @@ document.querySelector("#add-timeline-module").addEventListener("click", () => {
   ] });
   saveDraft(); renderTimelineEditor();
 });
-document.querySelector("#add-history").addEventListener("click", () => { draft.history.push({ title: "新段落", text: "在此填写复原后的历史正文。" }); saveDraft(); renderHistoryEditor(); });
+document.querySelector("#add-history").addEventListener("click", () => { draft.history.push({ title: "新段落", artwork: "", text: "在此填写复原后的完整故事正文。" }); saveDraft(); renderHistoryEditor(); });
 
 document.querySelector("#export-button").addEventListener("click", () => {
   normalizeTimeline();

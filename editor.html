@@ -37,6 +37,12 @@
             <label>主标题<input data-path="title" type="text" /></label>
             <label>副标题<input data-path="subtitle" type="text" /></label>
             <label>本阶段关键线索数量<input data-path="keyClueGoal" type="number" min="1" /></label>
+            <label>导师署名<input data-path="prologue.sender" type="text" /></label>
+            <label>邮件主题<input data-path="prologue.subject" type="text" /></label>
+            <label>学期／日期<input data-path="prologue.term" type="text" /></label>
+            <label>邮件落款<input data-path="prologue.signature" type="text" /></label>
+            <label>最先解锁的地点<select id="prologue-first-location"></select></label>
+            <label class="full-width">导师邮件正文<textarea data-path="prologue.body"></textarea></label>
           </div>
         </section>
 
@@ -64,6 +70,7 @@
 
         <section class="editor-section" data-editor-section="history">
           <div class="section-heading"><div><p>05</p><h2>完整历史正文</h2></div><button id="add-history" type="button">＋ 新增段落</button></div>
+          <p class="section-help">时间线只显示事件概括；全部复原后，玩家会自动翻到这里填写的完整故事纸页。每段也可以搭配一张图片。</p>
           <div id="history-editor"></div>
         </section>
 

@@ -23,6 +23,7 @@ button, input, textarea, select { font:inherit; }
 .section-heading span,.section-help { color:#716957; font-size:12px; }
 .section-heading button { color:#332f26; border-color:#95876c; }
 .form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:22px; }
+.full-width { grid-column:1 / -1; }
 label { display:grid; gap:8px; color:#5f5747; font-size:12px; }
 input,textarea,select { width:100%; padding:12px 13px; border:1px solid #a99d82; color:#29271f; background:rgba(245,239,222,.66); outline:none; }
 input:focus,textarea:focus,select:focus { border-color:#6f5147; box-shadow:0 0 0 2px rgba(113,62,59,.1); }
@@ -50,6 +51,7 @@ textarea { min-height:115px; resize:vertical; }
 .timeline-module-editor > .form-grid { margin-bottom:16px; }
 .module-events { margin:14px 0; }
 .history-edit-row { display:grid; grid-template-columns:1fr 2fr auto; gap:12px; margin:10px 0; padding:13px; border:1px solid var(--line); }
+.history-meta-fields { display:grid; gap:10px; align-content:start; }
 .rule-card { margin:26px 0; padding:20px; border-left:3px solid #8c6e54; background:rgba(240,234,217,.55); }
 .rule-card p { margin:8px 0 0; color:#6e6553; line-height:1.7; }
 .dream-form-tabs,.dream-place-tools { display:flex; gap:8px; margin:18px 0; }

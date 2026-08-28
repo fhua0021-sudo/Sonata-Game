@@ -19,6 +19,7 @@ const sceneArt = document.querySelector("#scene-art");
 const scenePlaceholder = document.querySelector("#scene-placeholder");
 const hotspotLayer = document.querySelector("#hotspot-layer");
 const clueCard = document.querySelector("#clue-card");
+const quillCursor = document.querySelector("#quill-cursor");
 const batonCursor = document.querySelector("#baton-cursor");
 const panels = [...document.querySelectorAll(".panel-layer")];
 
@@ -45,6 +46,7 @@ const defaultState = {
   dreamFoundForms: [],
   dreamFoundHotspots: [],
   dreamForm: CONTENT.dream.initialForm || "black",
+  introComplete: false,
   investigationComplete: false
 };
 
@@ -86,6 +88,39 @@ function ensureAudio() {
     if (AudioContext) audioContext = new AudioContext();
   }
   if (audioContext?.state === "suspended") audioContext.resume();
+}
+
+function playInkScratch(duration = 0.075, volume = 0.024) {
+  if (!state.sound) return;
+  ensureAudio();
+  if (!audioContext) return;
+  const now = audioContext.currentTime;
+  const frameCount = Math.max(1, Math.floor(audioContext.sampleRate * duration));
+  const buffer = audioContext.createBuffer(1, frameCount, audioContext.sampleRate);
+  const samples = buffer.getChannelData(0);
+  let last = 0;
+  for (let index = 0; index < frameCount; index += 1) {
+    const envelope = Math.sin((index / frameCount) * Math.PI);
+    last = last * 0.28 + (Math.random() * 2 - 1) * 0.72;
+    samples[index] = last * envelope;
+  }
+  const source = audioContext.createBufferSource();
+  const highpass = audioContext.createBiquadFilter();
+  const bandpass = audioContext.createBiquadFilter();
+  const gain = audioContext.createGain();
+  source.buffer = buffer;
+  highpass.type = "highpass";
+  highpass.frequency.setValueAtTime(520, now);
+  bandpass.type = "bandpass";
+  bandpass.frequency.setValueAtTime(1850, now);
+  bandpass.frequency.linearRampToValueAtTime(2350, now + duration);
+  bandpass.Q.setValueAtTime(0.72, now);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.linearRampToValueAtTime(volume, now + 0.009);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+  source.connect(highpass).connect(bandpass).connect(gain).connect(audioContext.destination);
+  source.start(now);
+  source.stop(now + duration + 0.01);
 }
 
 function stopActiveTone() {
@@ -163,8 +198,33 @@ function playHoverCue(kind) {
 }
 
 function playConfirmCue() {
+  playInkScratch(0.09, 0.03);
+}
+
+function playTimelineSuccessCue() {
   stopActiveTone();
-  playPizzicato(392, 0.036);
+  playTone(523.25, 0.09, 0.028, 1.002);
+  window.setTimeout(() => playTone(659.25, 0.13, 0.03, 1.002), 92);
+}
+
+function renderPrologue() {
+  const prologue = CONTENT.prologue || {};
+  const sender = prologue.sender || "音乐史系导师";
+  const subject = prologue.subject || "关于你提交的研究申请";
+  document.querySelector("#mail-summary-sender").textContent = sender;
+  document.querySelector("#mail-summary-subject").textContent = subject;
+  document.querySelector("#mail-sender").textContent = sender;
+  document.querySelector("#mail-subject").textContent = subject;
+  document.querySelector("#mail-term").textContent = prologue.term || "秋季学期 · 独立研究许可";
+  document.querySelector("#mail-signature").textContent = prologue.signature || sender;
+  const paragraphs = String(prologue.body || "你的研究申请已经通过。请从中央档案馆开始调查。").split(/\n\s*\n/).filter(Boolean);
+  document.querySelector("#mail-body").innerHTML = paragraphs.map((paragraph) => `<p>${paragraph.replace(/\n/g, "<br>")}</p>`).join("");
+}
+
+function resetMailView() {
+  document.querySelector("#mail-inbox").classList.remove("is-read");
+  document.querySelector("#mentor-letter").classList.remove("is-open");
+  document.querySelector("#mentor-letter").setAttribute("aria-hidden", "true");
 }
 
 function openPanel(id) {
@@ -212,6 +272,10 @@ function areAllModulesSolved() { return getTimelineModules().every((module) => i
 function getFoundClues() { return getAllClues().filter((clue) => state.foundClues.includes(clue.id)); }
 function getKeyCount() { return getFoundClues().filter((clue) => clue.kind === "key").length; }
 function getLocationClues(locationId) { return getAllClues().filter((clue) => clue.locationId === locationId); }
+function isLocationUnlocked(locationId, keyCount = getKeyCount()) {
+  const location = CONTENT.locations[locationId];
+  return Boolean(location) && keyCount >= (location.requiredKeyClues || 0);
+}
 
 function updateProgressUI() {
   document.querySelector("#clue-count").textContent = `${getKeyCount()} / ${CONTENT.keyClueGoal}`;
@@ -228,7 +292,21 @@ function updateProgressUI() {
   dreamDeskItem.classList.toggle("is-locked", !unlocked);
   dreamDeskItem.querySelector("small").textContent = unlocked ? "重新进入梦境" : "尚未解锁";
   document.querySelectorAll(".map-pin[data-location]").forEach((pin) => {
+    const location = CONTENT.locations[pin.dataset.location];
+    const locationUnlocked = isLocationUnlocked(pin.dataset.location);
+    pin.classList.toggle("is-locked", !locationUnlocked);
+    pin.setAttribute("aria-disabled", String(!locationUnlocked));
+    if (!location) {
+      const unavailableStatus = pin.querySelector("small");
+      if (unavailableStatus) unavailableStatus.textContent = "尚未解锁";
+      return;
+    }
     const clues = getLocationClues(pin.dataset.location);
+    if (!locationUnlocked) {
+      const lockedStatus = pin.querySelector("small");
+      if (lockedStatus) lockedStatus.textContent = `还需 ${Math.max(0, (location.requiredKeyClues || 0) - getKeyCount())} 条关键线索`;
+      return;
+    }
     if (!clues.length) return;
     const keyClues = clues.filter((clue) => clue.kind === "key");
     const allComplete = clues.every((clue) => state.foundClues.includes(clue.id));
@@ -243,6 +321,7 @@ function updateProgressUI() {
 function openScene(locationId, sceneIndex = 0) {
   const location = CONTENT.locations[locationId];
   if (!location) { showToast("这里暂时没有可调查的场景。"); return; }
+  if (!isLocationUnlocked(locationId)) { showToast(`【${location.name}尚未解锁】先完成当前地点的调查。`); return; }
   const scenes = getScenes(location);
   const scene = scenes[Math.max(0, Math.min(sceneIndex, scenes.length - 1))];
   currentLocation = locationId;
@@ -283,6 +362,7 @@ function openScene(locationId, sceneIndex = 0) {
 
 function discoverClue(clue, button) {
   const isNew = !state.foundClues.includes(clue.id);
+  const previousKeyCount = getKeyCount();
   if (isNew) {
     state.foundClues.push(clue.id);
     button.classList.add("is-found");
@@ -295,8 +375,13 @@ function discoverClue(clue, button) {
   clueCard.classList.add("is-open");
   clueCard.setAttribute("aria-hidden", "false");
   if (isNew && clue.kind === "optional") showToast("补充记录已自动收入调查簿。");
+  const currentKeyCount = getKeyCount();
+  const newlyUnlocked = Object.entries(CONTENT.locations).filter(([id, location]) => previousKeyCount < (location.requiredKeyClues || 0) && currentKeyCount >= (location.requiredKeyClues || 0) && isLocationUnlocked(id));
+  if (isNew && newlyUnlocked.length) {
+    window.setTimeout(() => showToast(`【${newlyUnlocked.map(([, location]) => location.name).join("、")}已解锁】`), 420);
+  }
   if (isNew && getKeyCount() >= CONTENT.keyClueGoal) {
-    window.setTimeout(() => showToast("关键记录已齐全，可以尝试还原历史。", "前往复原", () => openPanel("timeline-panel")), 650);
+    window.setTimeout(() => showToast("关键记录已齐全，可以尝试还原历史。", "前往复原", () => openPanel("timeline-panel")), newlyUnlocked.length ? 1700 : 650);
   }
 }
 
@@ -413,9 +498,15 @@ function submitTimeline() {
     if (!state.timelineSolvedModules.includes(activeModule.id)) state.timelineSolvedModules.push(activeModule.id);
     state.timelineSolved = areAllModulesSolved();
     saveState();
-    playTone(392, .12);
-    window.setTimeout(() => playTone(523.25, .14), 105);
-    if (state.timelineSolved) showToast("全部历史小节已经复原。昨夜之后，梦境开始变得清晰。", "进入梦境", () => openPanel("dream-panel"));
+    playTimelineSuccessCue();
+    if (state.timelineSolved) {
+      showToast("【完整故事页已解锁】时间线只是概括，研究稿正在展开。");
+      window.setTimeout(() => {
+        openPanel("history-panel");
+        document.querySelector("#history-panel").classList.add("is-revealing");
+        window.setTimeout(() => document.querySelector("#history-panel").classList.remove("is-revealing"), 900);
+      }, state.reduceMotion ? 100 : 760);
+    }
     else showToast(`${activeModule.title}已经复原，可以继续整理下一小节。`);
     renderTimeline();
   } else {
@@ -477,7 +568,7 @@ function discoverDreamClue(clue) {
 }
 
 function renderHistory() {
-  document.querySelector("#history-article").innerHTML = CONTENT.history.map((block) => `<section class="history-block"><div class="history-image">章节配图</div><div class="history-copy"><h3>${block.title}</h3><p>${block.text}</p></div></section>`).join("");
+  document.querySelector("#history-article").innerHTML = CONTENT.history.map((block) => `<section class="history-block"><div class="history-image" ${block.artwork ? `style="background-image:url('${block.artwork}')"` : ""}>${block.artwork ? "" : "章节配图"}</div><div class="history-copy"><h3>${block.title}</h3><p>${String(block.text || "").replace(/\n/g, "<br>")}</p></div></section>`).join("");
 }
 
 function openCredits() {
@@ -493,10 +584,22 @@ function openCredits() {
   roll.style.animation = "";
 }
 
-document.querySelector("#start-game").addEventListener("click", () => { ensureAudio(); playTone(392, .15); showScreen("prologue"); });
-document.querySelector("#enter-map").addEventListener("click", () => { playTone(523.25, .12); showScreen("map-screen"); });
+document.querySelector("#start-game").addEventListener("click", () => { ensureAudio(); resetMailView(); showScreen("prologue"); });
+document.querySelector("#open-mail").addEventListener("click", () => {
+  document.querySelector("#mail-inbox").classList.add("is-read");
+  document.querySelector("#mentor-letter").classList.add("is-open");
+  document.querySelector("#mentor-letter").setAttribute("aria-hidden", "false");
+});
+document.querySelector("#enter-map").addEventListener("click", () => {
+  state.introComplete = true;
+  saveState();
+  showScreen("map-screen");
+  const firstId = CONTENT.prologue?.firstLocation || Object.keys(CONTENT.locations)[0];
+  const firstLocation = CONTENT.locations[firstId];
+  if (firstLocation) window.setTimeout(() => showToast(`【${firstLocation.name}已解锁】导师建议先从这里开始。`), 300);
+});
 document.querySelectorAll(".map-pin").forEach((pin, index) => {
-  pin.addEventListener("pointerenter", () => { stopActiveTone(); playPizzicato([523.25, 587.33, 466.16][index], .024); });
+  pin.addEventListener("pointerenter", () => { if (!isLocationUnlocked(pin.dataset.location)) return; stopActiveTone(); playPizzicato([523.25, 587.33, 466.16][index], .024); });
   pin.addEventListener("click", () => openScene(pin.dataset.location));
 });
 document.querySelector("#scene-back").addEventListener("click", () => { sceneLayer.classList.remove("is-open"); clueCard.classList.remove("is-open"); document.body.classList.remove("custom-cursor-active"); });
@@ -582,12 +685,21 @@ document.querySelector("#credits-return").addEventListener("click", () => {
   showScreen("opening");
 });
 
+document.addEventListener("click", (event) => {
+  const interactive = event.target.closest("button, a");
+  if (!interactive || interactive.disabled || interactive.matches(".hotspot, .dream-hotspot")) return;
+  playInkScratch();
+}, true);
+
 const finePointer = window.matchMedia("(pointer: fine)").matches;
 document.body.classList.toggle("has-fine-pointer", finePointer);
 document.addEventListener("pointermove", (event) => {
   if (!finePointer) return;
+  quillCursor.style.left = `${event.clientX}px`;
+  quillCursor.style.top = `${event.clientY}px`;
   batonCursor.style.left = `${event.clientX}px`;
   batonCursor.style.top = `${event.clientY}px`;
 });
 
+renderPrologue();
 updateProgressUI();

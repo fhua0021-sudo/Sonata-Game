@@ -31,15 +31,31 @@
       </section>
 
       <section class="screen prologue-screen" id="prologue" aria-label="调查缘起">
-        <div class="prologue-card">
-          <p class="prologue-date">秋季学期 · 私人调查记录</p>
-          <div class="prologue-lines" id="prologue-lines">
-            <p>音乐史在这里出现了一段不自然的空白。</p>
-            <p>那份曾经极为重要的曲谱，只剩下彼此矛盾的传闻。</p>
-            <p>如果旧记录仍散落在某处，也许能重新拼出它的来历。</p>
-            <p>我决定从城中尚未封闭的档案开始。</p>
-          </div>
-          <button class="text-button" id="enter-map" type="button">翻开地图</button>
+        <div class="mail-shell" id="mail-shell">
+          <section class="mail-inbox" id="mail-inbox" aria-labelledby="mail-notice-title">
+            <div class="mail-seal" aria-hidden="true">1</div>
+            <p class="mail-kicker">UNREAD CORRESPONDENCE</p>
+            <h2 id="mail-notice-title">你收到了一封导师邮件</h2>
+            <dl class="mail-summary">
+              <div><dt>发件人</dt><dd id="mail-summary-sender">音乐史系导师</dd></div>
+              <div><dt>主题</dt><dd id="mail-summary-subject">关于研究申请</dd></div>
+            </dl>
+            <button class="text-button" id="open-mail" type="button">拆阅邮件</button>
+          </section>
+
+          <article class="mentor-letter" id="mentor-letter" aria-hidden="true">
+            <header class="letter-header">
+              <div><p>FROM</p><strong id="mail-sender">音乐史系导师</strong></div>
+              <div><p>SUBJECT</p><strong id="mail-subject">关于你提交的研究申请</strong></div>
+            </header>
+            <p class="prologue-date" id="mail-term">秋季学期 · 独立研究许可</p>
+            <div class="letter-body" id="mail-body"></div>
+            <footer class="letter-signature"><span id="mail-signature">导师办公室</span><i aria-hidden="true"></i></footer>
+            <div class="letter-action">
+              <small>研究身份：音乐史系学生</small>
+              <button class="text-button" id="enter-map" type="button">接受调查许可</button>
+            </div>
+          </article>
         </div>
       </section>
 
@@ -188,7 +204,7 @@
         </section>
 
         <section class="panel-layer" id="history-panel" aria-hidden="true">
-          <div class="panel-page history-page">
+          <div class="panel-page history-page history-sheet">
             <header class="page-header"><div><p>RESTORED HISTORY</p><h2>复原稿：残存记录</h2></div><button class="panel-close" type="button">返回地图</button></header>
             <article id="history-article"></article>
             <button class="primary-button light" id="finish-investigation" type="button">调查完成</button>
@@ -218,6 +234,7 @@
           </div>
         </section>
 
+        <div class="quill-cursor" id="quill-cursor" aria-hidden="true"><i></i></div>
         <div class="baton-cursor" id="baton-cursor" aria-hidden="true"><i></i></div>
       </section>
 

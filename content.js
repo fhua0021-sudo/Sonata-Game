@@ -2,9 +2,18 @@ window.SONATA_CONTENT = {
   title: "琴",
   subtitle: "遗失的和弦",
   keyClueGoal: 3,
+  prologue: {
+    term: "秋季学期 · 独立研究许可",
+    sender: "音乐史系导师",
+    subject: "关于你提交的“琴”音乐史研究申请",
+    body: "你的研究申请已经通过。作为音乐史系学生，你可以从本学期起正式调查史料中关于“琴”的断层。\n\n现存记载彼此矛盾，先不要急于接受后世的结论。中央档案馆仍保留着战前馆藏目录，我已经为你申请了阅览许可。请从那里开始，并把找到的记录按时间整理。",
+    signature: "导师办公室",
+    firstLocation: "archive"
+  },
   locations: {
     archive: {
       name: "中央档案馆",
+      requiredKeyClues: 0,
       scenes: [
         { id: "archive-room", title: "封存目录室", artwork: "", placeholderTone: "archive", hotspots: [
           { id: "archive-ledger", x: 31, y: 39, size: 7, kind: "key", title: "被涂改的目录", text: "某一年的演出目录被反复涂改。纸张下面仍能辨认出一个与曲谱有关的旧编号。" },
@@ -17,6 +26,7 @@ window.SONATA_CONTENT = {
     },
     theatre: {
       name: "旧歌剧院",
+      requiredKeyClues: 1,
       scenes: [
         { id: "theatre-backstage", title: "废弃的后台", artwork: "", placeholderTone: "theatre", hotspots: [
           { id: "theatre-program", x: 56, y: 34, size: 7, kind: "key", title: "战前演出单", text: "演出单证明，这份曲谱在战争前并不被视为灾厄。它曾经拥有完全不同的评价。" },
@@ -43,9 +53,9 @@ window.SONATA_CONTENT = {
     ] }
   ],
   history: [
-    { title: "乐声繁盛的年代", text: "占位正文：这里将放置根据第一阶段线索复原出的历史段落。正式内容可以在以后替换，不改变页面结构。" },
-    { title: "记录断裂之时", text: "占位正文：战争造成的文明断层，使后世无法理解曲谱为何从奖赏变成灾厄。" },
-    { title: "被封存的残谱", text: "占位正文：错误的演奏不断重复，关于它的社会认知最终发生了彻底偏移。" }
+    { title: "乐声繁盛的年代", artwork: "", text: "占位正文：这里将放置根据第一阶段线索复原出的完整故事。正式内容可以在以后替换，不改变页面结构。" },
+    { title: "记录断裂之时", artwork: "", text: "占位正文：战争造成的文明断层，使后世无法理解曲谱为何从奖赏变成灾厄。" },
+    { title: "被封存的残谱", artwork: "", text: "占位正文：错误的演奏不断重复，关于它的社会认知最终发生了彻底偏移。" }
   ],
   dream: {
     initialForm: "black",
