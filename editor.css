@@ -28,6 +28,7 @@ label { display:grid; gap:8px; color:#5f5747; font-size:12px; }
 input,textarea,select { width:100%; padding:12px 13px; border:1px solid #a99d82; color:#29271f; background:rgba(245,239,222,.66); outline:none; }
 input:focus,textarea:focus,select:focus { border-color:#6f5147; box-shadow:0 0 0 2px rgba(113,62,59,.1); }
 textarea { min-height:115px; resize:vertical; }
+textarea.long-textarea { min-height:210px; }
 .location-workspace { display:grid; grid-template-columns:220px 1fr; gap:24px; }
 .item-list { display:flex; flex-direction:column; gap:7px; }
 .item-list button { padding:13px; border:1px solid var(--line); color:#4a4437; cursor:pointer; text-align:left; background:rgba(240,234,217,.4); }
@@ -91,3 +92,4 @@ summary { cursor:pointer; }
   .item-list button { flex:0 0 auto; }
   .hotspot-row,.timeline-edit-row,.history-edit-row,.evidence-picker { grid-template-columns:1fr; }
 }
+

@@ -374,6 +374,10 @@ function discoverClue(clue, button) {
   document.querySelector("#clue-type").textContent = clue.kind === "key" ? "关键线索" : "补充记录";
   document.querySelector("#clue-title").textContent = clue.title;
   document.querySelector("#clue-text").textContent = clue.text;
+  const clueCardImage = document.querySelector("#clue-card-image");
+  clueCardImage.textContent = clue.artwork ? "" : "线索图片";
+  clueCardImage.style.backgroundImage = clue.artwork ? `url("${clue.artwork}")` : "none";
+  clueCardImage.classList.toggle("has-image", Boolean(clue.artwork));
   clueCard.classList.add("is-open");
   clueCard.setAttribute("aria-hidden", "false");
   if (isNew && clue.kind === "optional") showToast("补充记录已自动收入调查簿。");
@@ -411,7 +415,8 @@ function renderNotebook(tab) {
       return;
     }
     const grouped = Object.entries(CONTENT.locations).map(([id, location]) => ({ location, clues: found.filter((clue) => clue.locationId === id) })).filter((group) => group.clues.length);
-    content.innerHTML = grouped.map(({ location, clues }) => `<section class="record-group"><h3>${location.name}</h3>${clues.map((clue) => `<div class="record-entry"><b>${clue.kind === "key" ? "关键线索" : "补充记录"}</b><div><strong>${clue.title}</strong><p>${clue.text}</p></div></div>`).join("")}</section>`).join("");
+    content.innerHTML = grouped.map(({ location, clues }) => `<section class="record-group"><h3>${location.name}</h3>${clues.map((clue) => `<div class="record-entry"><b>${clue.kind === "key" ? "关键线索" : "补充记录"}</b><div><strong>${clue.title}</strong><p>${clue.text}</p><button class="record-link" data-clue-record="${clue.id}" type="button">阅读完整记录 <span>→</span></button></div></div>`).join("")}</section>`).join("");
+    content.querySelectorAll("[data-clue-record]").forEach((button) => button.addEventListener("click", () => openClueDetail(button.dataset.clueRecord)));
   } else if (tab === "history") {
     const solvedModules = getTimelineModules().filter((module) => isModuleSolved(module.id));
     content.innerHTML = solvedModules.length
@@ -424,6 +429,26 @@ function renderNotebook(tab) {
       : '<div class="empty-state"><p>没有可以确认的梦境记录。</p></div>';
     content.querySelector("[data-replay-dream]")?.addEventListener("click", () => openPanel("dream-panel"));
   }
+}
+
+function openClueDetail(clueId) {
+  const clue = getFoundClues().find((item) => item.id === clueId);
+  if (!clue) return;
+  document.querySelector("#clue-detail-meta").textContent = clue.kind === "key" ? "KEY INVESTIGATION RECORD" : "SUPPLEMENTARY RECORD";
+  document.querySelector("#clue-detail-title").textContent = clue.title;
+  document.querySelector("#clue-detail-location").textContent = `${clue.locationName} · ${clue.sceneTitle}`;
+  const figure = document.querySelector("#clue-detail-figure");
+  figure.classList.toggle("has-image", Boolean(clue.artwork));
+  figure.style.backgroundImage = clue.artwork ? `url("${clue.artwork}")` : "none";
+  figure.querySelector(".clue-detail-placeholder").hidden = Boolean(clue.artwork);
+  const body = document.querySelector("#clue-detail-body");
+  body.innerHTML = "";
+  String(clue.fullText || clue.text || "").split(/\n\s*\n/).filter(Boolean).forEach((paragraph) => {
+    const element = document.createElement("p");
+    element.textContent = paragraph;
+    body.appendChild(element);
+  });
+  openPanel("clue-detail-panel");
 }
 
 function renderTimeline() {
@@ -718,6 +743,7 @@ document.querySelectorAll(".panel-close").forEach((button) => button.addEventLis
   }
 }));
 document.querySelectorAll("[data-note-tab]").forEach((button) => button.addEventListener("click", () => renderNotebook(button.dataset.noteTab)));
+document.querySelector("#clue-detail-back").addEventListener("click", () => openPanel("notebook-panel"));
 document.querySelector("#timeline-submit").addEventListener("click", submitTimeline);
 document.querySelector("#timeline-hint").addEventListener("click", () => {
   const activeModule = getTimelineModules().find((module) => module.id === activeTimelineModuleId);
@@ -785,3 +811,4 @@ document.addEventListener("pointermove", (event) => {
 
 renderPrologue();
 updateProgressUI();
+

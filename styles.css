@@ -753,6 +753,7 @@ button:focus-visible {
 .clue-card h3 { margin: 9px 0 16px; font-size: 22px; font-weight: 400; }
 .clue-card > p:last-of-type { font-size: 13px; line-height: 1.85; }
 .clue-image-placeholder { display: grid; place-items: center; aspect-ratio: 16/9; color: #847a64; background: #c8bda3; font-size: 11px; letter-spacing: .16em; }
+.clue-image-placeholder.has-image { background-position:center; background-repeat:no-repeat; background-size:cover; }
 
 /* Desk, notebook, timeline and settings */
 .panel-layer { overflow: auto; padding: clamp(18px, 5vw, 70px); color: #24231e; background: rgba(13,13,11,.96); }
@@ -781,6 +782,17 @@ button:focus-visible {
 .record-entry { display: grid; grid-template-columns: 110px 1fr; gap: 18px; padding: 16px 0; border-top: 1px solid rgba(60,53,40,.18); }
 .record-entry b { color: #72534b; font-size: 12px; }
 .record-entry p { margin: 0; font-size: 13px; line-height: 1.75; }
+.record-link { margin-top:10px; padding:4px 0; border:0; border-bottom:1px solid rgba(103,70,61,.38); color:#6e463f; cursor:pointer; background:transparent; font-family:inherit; font-size:12px; letter-spacing:.08em; }
+.record-link span { display:inline-block; margin-left:6px; transition:transform .16s ease; }
+.record-link:hover span { transform:translateX(4px); }
+.clue-detail-page { max-width:900px; }
+#clue-detail-back { padding:8px 0; border:0; border-bottom:1px solid rgba(74,62,47,.35); color:#645b49; cursor:pointer; background:transparent; }
+.clue-detail-figure { display:grid; place-items:center; width:min(720px,100%); aspect-ratio:16/9; margin:42px auto 20px; background:#c9bea4; background-position:center; background-repeat:no-repeat; background-size:contain; box-shadow:0 14px 38px rgba(54,44,29,.16); }
+.clue-detail-placeholder { color:#81745c; text-align:center; font-size:11px; letter-spacing:.2em; line-height:2; }
+.clue-detail-placeholder span { font-size:10px; letter-spacing:.08em; }
+.clue-detail-location { width:min(720px,100%); margin:0 auto 32px; color:#887d68; font-size:10px; letter-spacing:.16em; text-align:right; }
+.clue-detail-body { width:min(720px,100%); margin:0 auto; font-size:15px; line-height:2.05; }
+.clue-detail-body p { margin:0 0 1.4em; }
 
 .timeline-intro { margin: 28px 0; color: #6f6654; line-height: 1.8; }
 .timeline-modules { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:0 0 24px; }
@@ -930,3 +942,4 @@ body.reduce-motion *::after { animation-duration: .01ms !important; transition-d
   .letter-action { align-items:flex-start; flex-direction:column; }
   .letter-action .text-button { margin-left:auto; }
 }
+

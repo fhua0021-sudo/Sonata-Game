@@ -151,7 +151,7 @@
             <button id="clue-close" type="button" aria-label="关闭线索">×</button>
             <p id="clue-type">关键线索</p>
             <h3 id="clue-title">线索标题</h3>
-            <div class="clue-image-placeholder">线索图片</div>
+            <div class="clue-image-placeholder" id="clue-card-image">线索图片</div>
             <p id="clue-text">线索内容</p>
           </aside>
         </section>
@@ -177,6 +177,17 @@
             </div>
             <div class="notebook-content" id="notebook-content"></div>
           </div>
+        </section>
+
+        <section class="panel-layer" id="clue-detail-panel" aria-hidden="true">
+          <article class="panel-page clue-detail-page">
+            <header class="page-header"><div><p id="clue-detail-meta">INVESTIGATION RECORD</p><h2 id="clue-detail-title">调查记录</h2></div><button id="clue-detail-back" type="button">返回调查簿</button></header>
+            <figure class="clue-detail-figure" id="clue-detail-figure">
+              <div class="clue-detail-placeholder">CLUE ARTWORK<br><span>此处替换为线索配图</span></div>
+            </figure>
+            <div class="clue-detail-location" id="clue-detail-location"></div>
+            <div class="clue-detail-body" id="clue-detail-body"></div>
+          </article>
         </section>
 
         <section class="panel-layer" id="timeline-panel" aria-hidden="true">
@@ -273,3 +284,4 @@
     <script src="game.js"></script>
   </body>
 </html>
+

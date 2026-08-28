@@ -17,11 +17,11 @@ window.SONATA_CONTENT = {
       requiredKeyClues: 0,
       scenes: [
         { id: "archive-room", title: "封存目录室", artwork: "", placeholderTone: "archive", hotspots: [
-          { id: "archive-ledger", x: 31, y: 39, size: 7, kind: "key", title: "被涂改的目录", text: "纸张下面仍能辨认出旧分类：它曾被列入典礼与赐礼演奏，并不属于灾厄或禁曲目录。" },
-          { id: "archive-letter", x: 67, y: 55, size: 6, kind: "optional", title: "没有寄出的便笺", text: "一张夹在书页中的私人便笺。它没有改变历史，却记录了当时某个人的迟疑。" }
+          { id: "archive-ledger", x: 31, y: 39, size: 7, kind: "key", title: "被涂改的目录", text: "纸张下面仍能辨认出旧分类：它曾被列入典礼与赐礼演奏，并不属于灾厄或禁曲目录。", artwork: "", fullText: "占位完整正文：在这里详细描写目录的纸张、涂改痕迹、原始分类与主角的判断。调查簿中只显示上方的简短摘要；点击“阅读完整记录”后，玩家会在独立纸页中看到这段正文与配图。" },
+          { id: "archive-letter", x: 67, y: 55, size: 6, kind: "optional", title: "没有寄出的便笺", text: "一张夹在书页中的私人便笺。它没有改变历史，却记录了当时某个人的迟疑。", artwork: "", fullText: "占位完整正文：可以在这里放入便笺的全文、发现过程，或与画稿相配的一段短篇故事。" }
         ] },
         { id: "archive-reading", title: "旧报刊阅览室", artwork: "", placeholderTone: "archive", hotspots: [
-          { id: "archive-review", x: 59, y: 47, size: 6, kind: "optional", title: "一则旧评论", text: "评论者曾用“赐予”形容这首作品。这与后世的危险传闻并不一致。" }
+          { id: "archive-review", x: 59, y: 47, size: 6, kind: "optional", title: "一则旧评论", text: "评论者曾用“赐予”形容这首作品。这与后世的危险传闻并不一致。", artwork: "", fullText: "占位完整正文：在这里填写评论原文、报刊背景，以及主角从中整理出的疑点。" }
         ] }
       ]
     },
@@ -30,8 +30,8 @@ window.SONATA_CONTENT = {
       requiredKeyClues: 1,
       scenes: [
         { id: "theatre-backstage", title: "废弃的后台", artwork: "", placeholderTone: "theatre", hotspots: [
-          { id: "theatre-program", x: 56, y: 34, size: 7, kind: "key", title: "战前演出单", text: "演出单证明，这份曲谱在战争前并不被视为灾厄。它曾经拥有完全不同的评价。" },
-          { id: "theatre-score", x: 27, y: 68, size: 7, kind: "key", title: "烧焦的排练记录", text: "记录停在战争开始前夕。最后一行提到：曲谱的抄本将被转移至北部。" }
+          { id: "theatre-program", x: 56, y: 34, size: 7, kind: "key", title: "战前演出单", text: "演出单证明，这份曲谱在战争前并不被视为灾厄。它曾经拥有完全不同的评价。", artwork: "", fullText: "占位完整正文：在这里写出演出单上的节目、日期、演奏者，以及它为何能反驳后世传闻。" },
+          { id: "theatre-score", x: 27, y: 68, size: 7, kind: "key", title: "烧焦的排练记录", text: "记录停在战争开始前夕。最后一行提到：曲谱的抄本将被转移至北部。", artwork: "", fullText: "占位完整正文：在这里详细呈现烧焦记录中仍可辨认的文字，以及抄本转移所留下的新疑问。" }
         ] }
       ]
     }
@@ -71,3 +71,4 @@ window.SONATA_CONTENT = {
     thanks: ["在此填写姓名"]
   }
 };
+

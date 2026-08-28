@@ -20,6 +20,10 @@ function loadDraft() {
       if (!location.scenes) {
         location.scenes = [{ id: `scene-${Date.now()}`, title: location.sceneTitle || "新场景", artwork: location.artwork || "", placeholderTone: location.placeholderTone || "archive", hotspots: location.hotspots || [] }];
       }
+      location.scenes.forEach((scene) => (scene.hotspots || []).forEach((spot) => {
+        if (spot.artwork == null) spot.artwork = "";
+        if (spot.fullText == null) spot.fullText = spot.text || "";
+      }));
     });
     if (!loaded.dream.hotspots) loaded.dream.hotspots = clone(window.SONATA_CONTENT.dream.hotspots);
     if (!loaded.dream.lightPoint) loaded.dream.lightPoint = clone(window.SONATA_CONTENT.dream.lightPoint);
@@ -145,7 +149,7 @@ function renderLocationEditor() {
     renderLocationEditor();
   });
   editor.querySelector("#add-hotspot").addEventListener("click", () => {
-    scene.hotspots.push({ id: `${activeLocation}-${Date.now()}`, x: 50, y: 50, size: 7, kind: "optional", title: "新调查点", text: "在此填写线索内容。" });
+    scene.hotspots.push({ id: `${activeLocation}-${Date.now()}`, x: 50, y: 50, size: 7, kind: "optional", title: "新调查点", text: "在此填写调查簿中的简短摘要。", artwork: "", fullText: "在此填写点开后的完整正文。" });
     activeHotspot = scene.hotspots.length - 1;
     saveDraft(); renderLocationEditor();
   });
@@ -170,7 +174,7 @@ function renderHotspots() {
   scene.hotspots.forEach((spot, index) => {
     const row = document.createElement("div");
     row.className = "editor-card";
-    row.innerHTML = `<div class="card-head"><h3>调查点 ${index + 1}</h3><button class="remove-button" type="button">删除</button></div><div class="hotspot-row"><label>标题<input data-field="title" value="${escapeHtml(spot.title || "")}"></label><label>类型<select data-field="kind"><option value="key" ${spot.kind === "key" ? "selected" : ""}>关键</option><option value="optional" ${spot.kind !== "key" ? "selected" : ""}>补充</option></select></label><label>大小<input data-field="size" type="number" min="2" max="20" value="${spot.size || 7}"></label></div><label>线索文字<textarea data-field="text">${escapeHtml(spot.text || "")}</textarea></label><p class="section-help">坐标：${spot.x}% / ${spot.y}%　点击上方画面重新放置</p>`;
+    row.innerHTML = `<div class="card-head"><h3>调查点 ${index + 1}</h3><button class="remove-button" type="button">删除</button></div><div class="hotspot-row"><label>标题<input data-field="title" value="${escapeHtml(spot.title || "")}"></label><label>类型<select data-field="kind"><option value="key" ${spot.kind === "key" ? "selected" : ""}>关键</option><option value="optional" ${spot.kind !== "key" ? "selected" : ""}>补充</option></select></label><label>大小<input data-field="size" type="number" min="2" max="20" value="${spot.size || 7}"></label></div><label>调查簿简短摘要<textarea data-field="text">${escapeHtml(spot.text || "")}</textarea></label><label>完整记录配图文件名<input data-field="artwork" value="${escapeHtml(spot.artwork || "")}" placeholder="assets/clues/clue-01.jpg"></label><label>点开后的完整正文<textarea class="long-textarea" data-field="fullText">${escapeHtml(spot.fullText || spot.text || "")}</textarea></label><p class="section-help">坐标：${spot.x}% / ${spot.y}%　点击上方画面重新放置。配图与完整正文会显示在独立的调查记录纸页中。</p>`;
     row.addEventListener("click", () => { activeHotspot = index; });
     row.querySelectorAll("[data-field]").forEach((input) => input.addEventListener("input", () => {
       spot[input.dataset.field] = input.type === "number" ? Number(input.value) : input.value;
@@ -321,3 +325,4 @@ renderLocations();
 renderTimelineEditor();
 renderHistoryEditor();
 renderDreamEditor();
+
