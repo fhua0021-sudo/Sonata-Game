@@ -1,5 +1,5 @@
 window.SONATA_CONTENT = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   title: "琴",
   subtitle: "仪式的和弦",
   keyClueGoal: 5,

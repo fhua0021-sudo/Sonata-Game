@@ -18,10 +18,21 @@ function loadDraft() {
     const loaded = JSON.parse(localStorage.getItem(DRAFT_KEY)) || clone(window.SONATA_CONTENT);
     const defaultContent = window.SONATA_CONTENT;
     const previousSchemaVersion = Number(loaded.schemaVersion || 1);
+    const usesLegacyMap = ["assets/weilan-empire-map.svg", "assets/weilan-empire-map.png"].includes(loaded.map?.artwork);
     loaded.schemaVersion = defaultContent.schemaVersion || 2;
+    if (loaded.subtitle === "遗失的和弦") loaded.subtitle = defaultContent.subtitle;
     loaded.prologue = { ...clone(window.SONATA_CONTENT.prologue), ...(loaded.prologue || {}) };
     loaded.map = { ...clone(window.SONATA_CONTENT.map || { artwork: "assets/weilan-mapgen4-187.webp", shroudOpacity: 0.62, defaultRevealRadius: 18 }), ...(loaded.map || {}) };
+    if (usesLegacyMap) loaded.map = clone(defaultContent.map);
     loaded.locations = { ...clone(defaultContent.locations || {}), ...(loaded.locations || {}) };
+    if (usesLegacyMap) {
+      Object.entries(defaultContent.locations || {}).forEach(([id, defaults]) => {
+        if (!loaded.locations[id]) return;
+        loaded.locations[id].mapX = defaults.mapX;
+        loaded.locations[id].mapY = defaults.mapY;
+        loaded.locations[id].mapRevealRadius = defaults.mapRevealRadius;
+      });
+    }
     Object.values(loaded.locations || {}).forEach((location, index) => {
       if (location.requiredKeyClues == null) location.requiredKeyClues = 0;
       if (location.mapX == null) location.mapX = 38 + (index % 3) * 16;
