@@ -83,29 +83,11 @@
           </aside>
 
           <div class="map-wrap">
-            <div class="map-paper" aria-label="虚构国度调查地图">
-              <div class="paper-texture" aria-hidden="true"></div>
-              <div class="country-shape" aria-hidden="true"></div>
-              <div class="route route-a" aria-hidden="true"></div>
-              <div class="route route-b" aria-hidden="true"></div>
-
-              <button class="map-pin pin-archive" type="button" data-location="archive">
-                <span class="pin-dot"></span>
-                <span class="pin-label"><b>中央档案馆</b><small>可调查</small></span>
-              </button>
-              <button class="map-pin pin-theatre" type="button" data-location="theatre">
-                <span class="pin-dot"></span>
-                <span class="pin-label"><b>旧歌剧院</b><small>可调查</small></span>
-              </button>
-              <button class="map-pin pin-station" type="button" data-location="station">
-                <span class="pin-dot"></span>
-                <span class="pin-label"><b>北部车站</b><small>尚无线索</small></span>
-              </button>
-
-              <div class="map-caption">
-                <span>WESTERN DISTRICT</span>
-                <b>旧王国西部调查图</b>
-              </div>
+            <div class="map-paper" id="map-paper" aria-label="维兰帝国调查地图">
+              <img class="world-map-art" id="world-map-art" src="assets/weilan-empire-map.svg" alt="维兰帝国地图" draggable="false" />
+              <canvas class="map-shroud" id="map-shroud" aria-hidden="true"></canvas>
+              <div class="map-pin-layer" id="map-pin-layer"></div>
+              <div class="map-key" aria-hidden="true"><span><i></i>已解封</span><span class="is-muted"><i></i>尚待调查</span></div>
             </div>
           </div>
 

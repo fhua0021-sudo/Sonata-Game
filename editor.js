@@ -15,8 +15,12 @@ function loadDraft() {
   try {
     const loaded = JSON.parse(localStorage.getItem(DRAFT_KEY)) || clone(window.SONATA_CONTENT);
     loaded.prologue = { ...clone(window.SONATA_CONTENT.prologue), ...(loaded.prologue || {}) };
-    Object.values(loaded.locations || {}).forEach((location) => {
+    loaded.map = { ...clone(window.SONATA_CONTENT.map || { artwork: "assets/weilan-empire-map.svg", shroudOpacity: 0.62, defaultRevealRadius: 18 }), ...(loaded.map || {}) };
+    Object.values(loaded.locations || {}).forEach((location, index) => {
       if (location.requiredKeyClues == null) location.requiredKeyClues = 0;
+      if (location.mapX == null) location.mapX = 38 + (index % 3) * 16;
+      if (location.mapY == null) location.mapY = 38 + Math.floor(index / 3) * 18;
+      if (location.mapRevealRadius == null) location.mapRevealRadius = loaded.map.defaultRevealRadius || 18;
       if (!location.scenes) {
         location.scenes = [{ id: `scene-${Date.now()}`, title: location.sceneTitle || "新场景", artwork: location.artwork || "", placeholderTone: location.placeholderTone || "archive", hotspots: location.hotspots || [] }];
       }
@@ -108,11 +112,18 @@ function renderLocationEditor() {
   if (!location) { editor.innerHTML = "<p>请先新增一个地点。</p>"; return; }
   const scene = location.scenes[activeSceneIndex] || location.scenes[0];
   activeSceneIndex = Math.max(0, location.scenes.indexOf(scene));
+  const mapArtwork = escapeHtml(draft.map?.artwork || "assets/weilan-empire-map.svg");
+  const mapDots = Object.entries(draft.locations).map(([id, item]) => `<button class="map-editor-dot ${id === activeLocation ? "is-current" : ""}" data-map-location="${escapeHtml(id)}" type="button" style="left:${Number(item.mapX ?? 50)}%;top:${Number(item.mapY ?? 50)}%" title="${escapeHtml(item.name || "未命名地点")}"><span>${escapeHtml(item.name || "未命名地点")}</span></button>`).join("");
   editor.innerHTML = `
     <div class="form-grid">
       <label>地点名称<input data-location-field="name" value="${escapeHtml(location.name || "")}"></label>
       <label>解锁所需关键线索<input data-location-field="requiredKeyClues" type="number" min="0" value="${location.requiredKeyClues || 0}"><small>填 0 表示开场即可进入；填 1 表示找到一条关键线索后解锁。</small></label>
+      <label>地图横向位置<input data-location-field="mapX" type="number" min="0" max="100" step="0.1" value="${Number(location.mapX ?? 50)}"></label>
+      <label>地图纵向位置<input data-location-field="mapY" type="number" min="0" max="100" step="0.1" value="${Number(location.mapY ?? 50)}"></label>
+      <label>解封照亮范围<input data-location-field="mapRevealRadius" type="number" min="8" max="36" step="1" value="${Number(location.mapRevealRadius ?? draft.map?.defaultRevealRadius ?? 18)}"><small>数值越大，地点解锁时照亮的地图范围越广。</small></label>
     </div>
+    <div class="map-placement-preview" id="map-location-preview" style="background-image:url('${mapArtwork}')">${mapDots}</div>
+    <p class="section-help">点击地图可移动当前地点；也可以直接拖动高亮点。其他地点会同时显示，方便避免重叠。</p>
     <div class="scene-picker">${location.scenes.map((item, index) => `<button class="${index === activeSceneIndex ? "is-current" : ""}" data-scene-index="${index}" type="button">场景 ${index + 1}</button>`).join("")}<button id="add-scene" type="button" ${location.scenes.length >= 3 ? "disabled" : ""}>＋ 新增场景</button></div>
     <div class="form-grid">
       <label>场景标题<input data-scene-field="title" value="${escapeHtml(scene.title || "")}"></label>
@@ -131,7 +142,46 @@ function renderLocationEditor() {
       if (currentButton) currentButton.textContent = input.value || "未命名地点";
       renderFirstLocationSelect();
     }
+    if (input.dataset.locationField === "mapX" || input.dataset.locationField === "mapY") {
+      const dot = editor.querySelector(`[data-map-location="${activeLocation}"]`);
+      if (dot) {
+        dot.style.left = `${Number(location.mapX ?? 50)}%`;
+        dot.style.top = `${Number(location.mapY ?? 50)}%`;
+      }
+    }
   }));
+  const mapPreview = editor.querySelector("#map-location-preview");
+  let draggingMapPoint = false;
+  const placeMapPoint = (event) => {
+    const rect = mapPreview.getBoundingClientRect();
+    location.mapX = Math.round(Math.max(0, Math.min(100, ((event.clientX - rect.left) / rect.width) * 100)) * 10) / 10;
+    location.mapY = Math.round(Math.max(0, Math.min(100, ((event.clientY - rect.top) / rect.height) * 100)) * 10) / 10;
+    const dot = mapPreview.querySelector(`[data-map-location="${activeLocation}"]`);
+    if (dot) { dot.style.left = `${location.mapX}%`; dot.style.top = `${location.mapY}%`; }
+    const xInput = editor.querySelector('[data-location-field="mapX"]');
+    const yInput = editor.querySelector('[data-location-field="mapY"]');
+    if (xInput) xInput.value = location.mapX;
+    if (yInput) yInput.value = location.mapY;
+    saveDraft();
+  };
+  mapPreview.addEventListener("pointerdown", (event) => {
+    const targetDot = event.target.closest("[data-map-location]");
+    if (targetDot && targetDot.dataset.mapLocation !== activeLocation) {
+      activeLocation = targetDot.dataset.mapLocation;
+      activeSceneIndex = 0;
+      activeHotspot = 0;
+      renderLocations();
+      return;
+    }
+    draggingMapPoint = true;
+    mapPreview.setPointerCapture(event.pointerId);
+    placeMapPoint(event);
+  });
+  mapPreview.addEventListener("pointermove", (event) => { if (draggingMapPoint) placeMapPoint(event); });
+  mapPreview.addEventListener("pointerup", (event) => {
+    draggingMapPoint = false;
+    if (mapPreview.hasPointerCapture(event.pointerId)) mapPreview.releasePointerCapture(event.pointerId);
+  });
   editor.querySelectorAll("[data-scene-field]").forEach((input) => input.addEventListener("input", () => { scene[input.dataset.sceneField] = input.value; saveDraft(); }));
   editor.querySelectorAll("[data-scene-index]").forEach((button) => button.addEventListener("click", () => { activeSceneIndex = Number(button.dataset.sceneIndex); activeHotspot = 0; renderLocationEditor(); }));
   editor.querySelector("#add-scene").addEventListener("click", () => {
@@ -287,7 +337,7 @@ function escapeHtml(value) { return String(value).replace(/[&<>'"]/g, (character
 
 document.querySelector("#add-location").addEventListener("click", () => {
   const id = `location-${Date.now()}`;
-  draft.locations[id] = { name: "新地点", requiredKeyClues: 0, scenes: [{ id: `${id}-scene-1`, title: "新场景", artwork: "", placeholderTone: "archive", hotspots: [] }] };
+  draft.locations[id] = { name: "新地点", requiredKeyClues: 0, mapX: 50, mapY: 50, mapRevealRadius: draft.map?.defaultRevealRadius || 18, scenes: [{ id: `${id}-scene-1`, title: "新场景", artwork: "", placeholderTone: "archive", hotspots: [] }] };
   activeLocation = id; activeSceneIndex = 0; saveDraft(); renderLocations();
 });
 document.querySelector("#add-timeline-module").addEventListener("click", () => {

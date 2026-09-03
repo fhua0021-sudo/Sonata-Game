@@ -1,6 +1,19 @@
 const CONTENT = (() => {
   if (new URLSearchParams(window.location.search).has("editor-preview")) {
-    try { return JSON.parse(localStorage.getItem("sonata-content-draft-v1")) || window.SONATA_CONTENT; }
+    try {
+      const draft = JSON.parse(localStorage.getItem("sonata-content-draft-v1"));
+      if (!draft) return window.SONATA_CONTENT;
+      const locations = Object.fromEntries(Object.entries(draft.locations || window.SONATA_CONTENT.locations).map(([id, location], index) => {
+        const original = window.SONATA_CONTENT.locations[id] || {};
+        return [id, {
+          ...location,
+          mapX: location.mapX ?? original.mapX ?? 38 + (index % 3) * 16,
+          mapY: location.mapY ?? original.mapY ?? 38 + Math.floor(index / 3) * 18,
+          mapRevealRadius: location.mapRevealRadius ?? original.mapRevealRadius ?? window.SONATA_CONTENT.map?.defaultRevealRadius ?? 18
+        }];
+      }));
+      return { ...window.SONATA_CONTENT, ...draft, map: { ...window.SONATA_CONTENT.map, ...(draft.map || {}) }, locations };
+    }
     catch { return window.SONATA_CONTENT; }
   }
   return window.SONATA_CONTENT;
@@ -22,6 +35,10 @@ const clueCard = document.querySelector("#clue-card");
 const quillCursor = document.querySelector("#quill-cursor");
 const batonCursor = document.querySelector("#baton-cursor");
 const panels = [...document.querySelectorAll(".panel-layer")];
+const mapPaper = document.querySelector("#map-paper");
+const worldMapArt = document.querySelector("#world-map-art");
+const mapShroud = document.querySelector("#map-shroud");
+const mapPinLayer = document.querySelector("#map-pin-layer");
 
 let audioContext = null;
 let activeOscillator = null;
@@ -33,6 +50,7 @@ let zoom = 1;
 let pan = { x: 0, y: 0 };
 let activeTimelineModuleId = null;
 let selectedEvidenceIds = new Set();
+let mapRevealFrame = null;
 
 const defaultState = {
   sound: true,
@@ -279,6 +297,100 @@ function isLocationUnlocked(locationId, keyCount = getKeyCount()) {
   return Boolean(location) && keyCount >= (location.requiredKeyClues || 0);
 }
 
+function renderMapPins() {
+  if (!mapPinLayer) return;
+  mapPinLayer.innerHTML = "";
+  Object.entries(CONTENT.locations).forEach(([locationId, location], index) => {
+    const pin = document.createElement("button");
+    pin.type = "button";
+    pin.className = "map-pin";
+    pin.dataset.location = locationId;
+    pin.style.left = `${Number(location.mapX ?? 50)}%`;
+    pin.style.top = `${Number(location.mapY ?? 50)}%`;
+    pin.innerHTML = `<span class="pin-dot"></span><span class="pin-label"><b>${location.name || "未命名地点"}</b><small>等待确认</small></span>`;
+    pin.addEventListener("pointerenter", () => {
+      if (!isLocationUnlocked(locationId)) return;
+      stopActiveTone();
+      playPizzicato([523.25, 587.33, 466.16, 659.25][index % 4], .024);
+    });
+    pin.addEventListener("click", () => openScene(locationId));
+    mapPinLayer.appendChild(pin);
+  });
+}
+
+function drawMapShroud(revealingLocationId = "", revealProgress = 1) {
+  if (!mapPaper || !mapShroud) return;
+  const rect = mapPaper.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+  const density = Math.min(window.devicePixelRatio || 1, 2);
+  const width = Math.round(rect.width);
+  const height = Math.round(rect.height);
+  const pixelWidth = Math.round(width * density);
+  const pixelHeight = Math.round(height * density);
+  if (mapShroud.width !== pixelWidth || mapShroud.height !== pixelHeight) {
+    mapShroud.width = pixelWidth;
+    mapShroud.height = pixelHeight;
+  }
+  const context = mapShroud.getContext("2d");
+  context.setTransform(density, 0, 0, density, 0, 0);
+  context.clearRect(0, 0, width, height);
+  const opacity = Math.max(0, Math.min(0.86, Number(CONTENT.map?.shroudOpacity ?? 0.62)));
+  const shade = context.createLinearGradient(0, 0, 0, height);
+  shade.addColorStop(0, "rgba(16,18,18,0)");
+  shade.addColorStop(.13, `rgba(16,18,18,${opacity * .28})`);
+  shade.addColorStop(.22, `rgba(16,18,18,${opacity})`);
+  shade.addColorStop(.93, `rgba(16,18,18,${opacity})`);
+  shade.addColorStop(1, `rgba(16,18,18,${opacity * .18})`);
+  context.fillStyle = shade;
+  context.fillRect(0, 0, width, height);
+  context.globalCompositeOperation = "destination-out";
+  Object.entries(CONTENT.locations).forEach(([locationId, location]) => {
+    if (!isLocationUnlocked(locationId)) return;
+    const progress = locationId === revealingLocationId ? revealProgress : 1;
+    const baseRadius = Number(location.mapRevealRadius ?? CONTENT.map?.defaultRevealRadius ?? 18) / 100 * width;
+    const radius = Math.max(2, baseRadius * Math.max(.04, progress));
+    const x = Number(location.mapX ?? 50) / 100 * width;
+    const y = Number(location.mapY ?? 50) / 100 * height;
+    const glow = context.createRadialGradient(x, y, 0, x, y, radius);
+    glow.addColorStop(0, "rgba(0,0,0,1)");
+    glow.addColorStop(.58, "rgba(0,0,0,.96)");
+    glow.addColorStop(.82, "rgba(0,0,0,.56)");
+    glow.addColorStop(1, "rgba(0,0,0,0)");
+    context.fillStyle = glow;
+    context.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+  });
+  context.globalCompositeOperation = "source-over";
+}
+
+function queueMapShroud() {
+  window.requestAnimationFrame(() => drawMapShroud());
+}
+
+function animateMapReveal(locationId) {
+  if (!locationId || !isLocationUnlocked(locationId)) return;
+  const pin = mapPinLayer?.querySelector(`[data-location="${locationId}"]`);
+  pin?.classList.add("is-unlocking");
+  if (state.reduceMotion) {
+    drawMapShroud();
+    window.setTimeout(() => pin?.classList.remove("is-unlocking"), 40);
+    return;
+  }
+  window.cancelAnimationFrame(mapRevealFrame);
+  const startedAt = performance.now();
+  const duration = 980;
+  const step = (now) => {
+    const raw = Math.min(1, (now - startedAt) / duration);
+    const eased = 1 - Math.pow(1 - raw, 3);
+    drawMapShroud(locationId, eased);
+    if (raw < 1) mapRevealFrame = window.requestAnimationFrame(step);
+    else {
+      pin?.classList.remove("is-unlocking");
+      drawMapShroud();
+    }
+  };
+  mapRevealFrame = window.requestAnimationFrame(step);
+}
+
 function updateProgressUI() {
   document.querySelector("#clue-count").textContent = `${getKeyCount()} / ${CONTENT.keyClueGoal}`;
   soundToggle.textContent = state.sound ? "♫" : "♩";
@@ -318,6 +430,7 @@ function updateProgressUI() {
     const status = pin.querySelector("small");
     if (status) status.textContent = allComplete ? "全部调查完成" : mainComplete ? "主要调查完成" : "可调查";
   });
+  queueMapShroud();
 }
 
 function openScene(locationId, sceneIndex = 0) {
@@ -384,7 +497,10 @@ function discoverClue(clue, button) {
   const currentKeyCount = getKeyCount();
   const newlyUnlocked = Object.entries(CONTENT.locations).filter(([id, location]) => previousKeyCount < (location.requiredKeyClues || 0) && currentKeyCount >= (location.requiredKeyClues || 0) && isLocationUnlocked(id));
   if (isNew && newlyUnlocked.length) {
-    window.setTimeout(() => showToast(`【${newlyUnlocked.map(([, location]) => location.name).join("、")}已解锁】`), 420);
+    window.setTimeout(() => {
+      newlyUnlocked.forEach(([id]) => animateMapReveal(id));
+      showToast(`【${newlyUnlocked.map(([, location]) => location.name).join("、")}已解锁】`);
+    }, 420);
   }
   const dreamThreshold = CONTENT.dream.unlockAtKeyClues || Math.ceil(CONTENT.keyClueGoal / 2);
   if (isNew && clue.kind === "key" && currentKeyCount >= dreamThreshold && !state.dreamPrompted) {
@@ -688,13 +804,12 @@ document.querySelector("#enter-map").addEventListener("click", () => {
   showScreen("map-screen");
   const firstId = CONTENT.prologue?.firstLocation || Object.keys(CONTENT.locations)[0];
   const firstLocation = CONTENT.locations[firstId];
-  if (firstLocation) window.setTimeout(() => showToast(`【${firstLocation.name}已解锁】导师建议先从这里开始。`), 300);
+  if (firstLocation) window.setTimeout(() => {
+    animateMapReveal(firstId);
+    showToast(`【${firstLocation.name}已解锁】导师建议先从这里开始。`);
+  }, 300);
   const dreamThreshold = CONTENT.dream.unlockAtKeyClues || Math.ceil(CONTENT.keyClueGoal / 2);
   if (getKeyCount() >= dreamThreshold && !state.dreamPrompted) window.setTimeout(showDreamRestPrompt, 900);
-});
-document.querySelectorAll(".map-pin").forEach((pin, index) => {
-  pin.addEventListener("pointerenter", () => { if (!isLocationUnlocked(pin.dataset.location)) return; stopActiveTone(); playPizzicato([523.25, 587.33, 466.16][index], .024); });
-  pin.addEventListener("click", () => openScene(pin.dataset.location));
 });
 document.querySelector("#scene-back").addEventListener("click", () => { sceneLayer.classList.remove("is-open"); clueCard.classList.remove("is-open"); document.body.classList.remove("custom-cursor-active"); });
 document.querySelector("#scene-prev").addEventListener("click", () => openScene(currentLocation, currentSceneIndex - 1));
@@ -809,6 +924,13 @@ document.addEventListener("pointermove", (event) => {
   batonCursor.style.top = `${event.clientY}px`;
 });
 
+if (worldMapArt && CONTENT.map?.artwork) {
+  worldMapArt.src = CONTENT.map.artwork;
+  worldMapArt.alt = CONTENT.map.alt || "调查地图";
+  worldMapArt.addEventListener("load", queueMapShroud);
+}
+window.addEventListener("resize", queueMapShroud);
+renderMapPins();
 renderPrologue();
 updateProgressUI();
 

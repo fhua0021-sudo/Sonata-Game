@@ -37,6 +37,9 @@
             <label>主标题<input data-path="title" type="text" /></label>
             <label>副标题<input data-path="subtitle" type="text" /></label>
             <label>本阶段关键线索数量<input data-path="keyClueGoal" type="number" min="1" /></label>
+            <label>地图图片文件名<input data-path="map.artwork" type="text" placeholder="assets/weilan-empire-map.svg" /></label>
+            <label>未解锁区域暗度<input data-path="map.shroudOpacity" type="number" min="0" max="0.86" step="0.05" /></label>
+            <label>默认地点照亮范围<input data-path="map.defaultRevealRadius" type="number" min="8" max="36" step="1" /></label>
             <label>导师署名<input data-path="prologue.sender" type="text" /></label>
             <label>邮件主题<input data-path="prologue.subject" type="text" /></label>
             <label>学期／日期<input data-path="prologue.term" type="text" /></label>
@@ -94,3 +97,4 @@
     <script src="editor.js"></script>
   </body>
 </html>
+

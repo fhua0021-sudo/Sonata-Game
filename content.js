@@ -2,6 +2,12 @@ window.SONATA_CONTENT = {
   title: "琴",
   subtitle: "遗失的和弦",
   keyClueGoal: 3,
+  map: {
+    artwork: "assets/weilan-empire-map.svg",
+    alt: "维兰帝国调查地图",
+    shroudOpacity: 0.62,
+    defaultRevealRadius: 18
+  },
   prologue: {
     term: "秋季学期 · 独立研究许可",
     sender: "音乐史系导师",
@@ -15,6 +21,9 @@ window.SONATA_CONTENT = {
     archive: {
       name: "中央档案馆",
       requiredKeyClues: 0,
+      mapX: 56,
+      mapY: 37,
+      mapRevealRadius: 19,
       scenes: [
         { id: "archive-room", title: "封存目录室", artwork: "", placeholderTone: "archive", hotspots: [
           { id: "archive-ledger", x: 31, y: 39, size: 7, kind: "key", title: "被涂改的目录", text: "纸张下面仍能辨认出旧分类：它曾被列入典礼与赐礼演奏，并不属于灾厄或禁曲目录。", artwork: "", fullText: "占位完整正文：在这里详细描写目录的纸张、涂改痕迹、原始分类与主角的判断。调查簿中只显示上方的简短摘要；点击“阅读完整记录”后，玩家会在独立纸页中看到这段正文与配图。" },
@@ -28,6 +37,9 @@ window.SONATA_CONTENT = {
     theatre: {
       name: "旧歌剧院",
       requiredKeyClues: 1,
+      mapX: 72,
+      mapY: 58,
+      mapRevealRadius: 18,
       scenes: [
         { id: "theatre-backstage", title: "废弃的后台", artwork: "", placeholderTone: "theatre", hotspots: [
           { id: "theatre-program", x: 56, y: 34, size: 7, kind: "key", title: "战前演出单", text: "演出单证明，这份曲谱在战争前并不被视为灾厄。它曾经拥有完全不同的评价。", artwork: "", fullText: "占位完整正文：在这里写出演出单上的节目、日期、演奏者，以及它为何能反驳后世传闻。" },

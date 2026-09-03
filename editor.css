@@ -45,6 +45,11 @@ textarea.long-textarea { min-height:210px; }
 .hotspot-preview { position:relative; width:100%; aspect-ratio:16/9; margin:20px 0; overflow:hidden; cursor:crosshair; background:linear-gradient(135deg,#35332b,#81755e); }
 .hotspot-preview::before { position:absolute; inset:0; display:grid; place-items:center; content:"点击画面放置当前调查点"; color:#d9cfb6; letter-spacing:.15em; font-size:12px; }
 .preview-dot { position:absolute; z-index:2; width:18px; height:18px; border:2px solid #fff1c6; border-radius:50%; background:#7e433e; transform:translate(-50%,-50%); }
+.map-placement-preview { position:relative; width:100%; aspect-ratio:3/2; margin:24px 0 8px; overflow:hidden; touch-action:none; cursor:crosshair; background-color:#c9bea3; background-size:cover; background-position:center; box-shadow:inset 0 0 0 1px rgba(55,49,37,.25),0 12px 30px rgba(54,46,31,.14); }
+.map-editor-dot { position:absolute; z-index:2; width:18px; height:18px; padding:0; border:3px solid #f5e9c8; border-radius:50%; cursor:pointer; background:#766f62; box-shadow:0 0 0 2px #4c463c,0 3px 12px rgba(0,0,0,.42); transform:translate(-50%,-50%); }
+.map-editor-dot span { position:absolute; top:22px; left:50%; width:max-content; max-width:150px; padding:4px 7px; color:#332d23; background:rgba(239,230,204,.9); font-size:10px; white-space:nowrap; transform:translateX(-50%); box-shadow:0 2px 7px rgba(52,43,27,.18); }
+.map-editor-dot.is-current { cursor:grab; background:#7e433e; box-shadow:0 0 0 3px #d8bf7a,0 0 22px rgba(221,190,110,.9); }
+.map-editor-dot.is-current:active { cursor:grabbing; }
 .hotspot-row { display:grid; grid-template-columns:1fr 110px auto; gap:10px; align-items:end; margin:10px 0; }
 .timeline-edit-row { display:grid; grid-template-columns:40px 1fr 1.5fr auto; gap:12px; align-items:center; margin:10px 0; padding:13px; border:1px solid var(--line); background:rgba(240,234,217,.45); }
 .timeline-edit-row > span { text-align:center; }
