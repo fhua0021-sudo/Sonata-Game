@@ -240,7 +240,7 @@ function playTimelineSuccessCue() {
 function renderPrologue() {
   const prologue = CONTENT.prologue || {};
   const title = CONTENT.title || "琴";
-  const subtitle = CONTENT.subtitle || "遗失的和弦";
+  const subtitle = CONTENT.subtitle || "仪式的和弦";
   document.querySelector("#game-title").textContent = title;
   document.querySelector("#game-subtitle").textContent = subtitle;
   document.title = `${title}：${subtitle}`;
@@ -924,7 +924,7 @@ function renderHistory() {
 
 function renderCredits() {
   document.querySelector("#credits-title").textContent = CONTENT.title || "琴";
-  document.querySelector("#credits-subtitle").textContent = CONTENT.subtitle || "遗失的和弦";
+  document.querySelector("#credits-subtitle").textContent = CONTENT.subtitle || "仪式的和弦";
   const labels = { planning: "策划／原案", artists: "画师", writers: "文手", music: "音乐", thanks: "特别感谢" };
   const container = document.querySelector("#credits-content");
   container.innerHTML = "";
