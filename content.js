@@ -1,7 +1,7 @@
 window.SONATA_CONTENT = {
   schemaVersion: 2,
   title: "琴",
-  subtitle: "遗失的和弦",
+  subtitle: "仪式的和弦",
   keyClueGoal: 5,
   map: {
     artwork: "assets/weilan-empire-map.svg",
