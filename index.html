@@ -24,7 +24,7 @@
         <div class="opening-copy">
           <p class="eyebrow">一份未完成的音乐史调查</p>
           <h1 id="game-title">琴</h1>
-          <p class="subtitle">遗失的和弦</p>
+          <p class="subtitle" id="game-subtitle">遗失的和弦</p>
           <p class="sound-hint">建议使用电脑并开启声音体验</p>
           <button class="primary-button" id="start-game" type="button">开始调查</button>
         </div>
@@ -67,7 +67,7 @@
             <h2 id="map-title">调查地图</h2>
           </div>
           <div class="header-actions">
-            <span class="progress-copy">关键线索 <strong id="clue-count">0 / 3</strong></span>
+            <span class="progress-copy">关键线索 <strong id="clue-count">0 / 5</strong></span>
             <button class="icon-button" id="sound-toggle" type="button" aria-label="关闭声音" title="关闭声音">♫</button>
             <button class="icon-button" id="settings-open" type="button" aria-label="打开设置" title="设置">⚙</button>
           </div>
@@ -102,6 +102,7 @@
           <button class="is-current" type="button" data-view="map">地图</button>
           <button type="button" data-view="notebook">调查簿</button>
           <button type="button" data-view="timeline">传闻勘误</button>
+          <button class="is-hidden" type="button" data-view="comics">图像残页</button>
           <button class="is-hidden" type="button" data-view="dream" aria-label="梦境记录">梦境<i class="nav-update-dot" aria-hidden="true"></i></button>
         </nav>
 
@@ -145,6 +146,7 @@
               <button class="desk-item" data-open-panel="notebook-panel" type="button"><span>01</span><b>调查簿</b><small>查看自动归档的记录</small></button>
               <button class="desk-item" data-open-panel="timeline-panel" type="button"><span>02</span><b>传闻勘误</b><small>用调查记录纠正流传的说法</small></button>
               <button class="desk-item is-hidden" id="dream-desk-item" data-open-panel="dream-panel" type="button"><span>03</span><b>梦境记录</b><small>随时重新进入</small></button>
+              <button class="desk-item is-hidden" id="comic-desk-item" data-open-panel="comic-panel" type="button"><span>04</span><b>图像残页</b><small>查看逐步复原的黑白漫画</small></button>
             </div>
           </div>
         </section>
@@ -184,6 +186,27 @@
               <button class="secondary-button" id="timeline-hint" type="button">调查提示</button>
               <button class="primary-button light" id="timeline-submit" type="button">提交勘误</button>
             </div>
+          </div>
+        </section>
+
+        <section class="panel-layer" id="comic-panel" aria-hidden="true">
+          <div class="panel-page comic-page">
+            <header class="page-header"><div><p>RESTORED IMAGE PAGES</p><h2 id="comic-panel-title">图像残页</h2></div><button class="panel-close" type="button">返回地图</button></header>
+            <div class="comic-reader" id="comic-reader">
+              <figure class="comic-figure" id="comic-figure">
+                <img id="comic-image" alt="" hidden />
+                <div class="comic-placeholder" id="comic-placeholder"><span>COMIC PAGE</span><b>此处替换为黑白漫画页</b></div>
+              </figure>
+              <div class="comic-copy"><span id="comic-page-count">1 / 5</span><h3 id="comic-page-title">残页一</h3><p id="comic-caption"></p></div>
+              <div class="comic-controls">
+                <button class="secondary-button" id="comic-prev" type="button">← 上一页</button>
+                <button class="secondary-button" id="comic-next" type="button">下一页 →</button>
+              </div>
+              <nav class="comic-page-strip" id="comic-page-strip" aria-label="漫画页码"></nav>
+            </div>
+            <div class="comic-continuous" id="comic-continuous" hidden></div>
+            <button class="secondary-button comic-view-switch" id="comic-continuous-toggle" type="button" hidden>连续阅读</button>
+            <button class="primary-button light comic-history-button" id="comic-to-history" type="button" hidden>继续阅读完整历史</button>
           </div>
         </section>
 
@@ -245,12 +268,8 @@
         <section class="credits-layer" id="credits-layer" aria-hidden="true">
           <button class="credits-skip" id="credits-skip" type="button">略过</button>
           <div class="credits-roll" id="credits-roll">
-            <h2>琴</h2><p class="credits-subtitle">遗失的和弦</p>
-            <h3>策划／原案</h3><p>在此填写姓名</p>
-            <h3>画师</h3><p>在此填写姓名</p>
-            <h3>文手</h3><p>在此填写姓名</p>
-            <h3>音乐</h3><p>在此填写姓名</p>
-            <h3>特别感谢</h3><p>在此填写姓名</p>
+            <h2 id="credits-title">琴</h2><p class="credits-subtitle" id="credits-subtitle">遗失的和弦</p>
+            <div id="credits-content"></div>
             <p class="credits-end">感谢你的调查。</p>
             <button class="text-button credits-return" id="credits-return" type="button">返回标题页</button>
           </div>
