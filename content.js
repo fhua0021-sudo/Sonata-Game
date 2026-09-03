@@ -4,8 +4,8 @@ window.SONATA_CONTENT = {
   subtitle: "仪式的和弦",
   keyClueGoal: 5,
   map: {
-    artwork: "assets/weilan-empire-map.svg",
-    alt: "维兰帝国调查地图",
+    artwork: "assets/weilan-mapgen4-187.webp",
+    alt: "维兰帝国及东南神秘岛调查地图",
     shroudOpacity: 0.62,
     defaultRevealRadius: 18
   },
@@ -22,9 +22,9 @@ window.SONATA_CONTENT = {
     archive: {
       name: "中央档案馆",
       requiredKeyClues: 0,
-      mapX: 41,
-      mapY: 27,
-      mapRevealRadius: 19,
+      mapX: 63,
+      mapY: 69,
+      mapRevealRadius: 16,
       scenes: [
         { id: "archive-room", title: "封存目录室", artwork: "", placeholderTone: "archive", hotspots: [
           { id: "archive-ledger", x: 31, y: 39, size: 7, kind: "key", title: "被涂改的目录", text: "纸张下面仍能辨认出旧分类：它曾被列入典礼与赐礼演奏，并不属于灾厄或禁曲目录。", artwork: "", fullText: "占位完整正文：在这里详细描写目录的纸张、涂改痕迹、原始分类与主角的判断。调查簿中只显示上方的简短摘要；点击“阅读完整记录”后，玩家会在独立纸页中看到这段正文与配图。" },
@@ -38,9 +38,9 @@ window.SONATA_CONTENT = {
     theatre: {
       name: "旧歌剧院",
       requiredKeyClues: 1,
-      mapX: 61,
-      mapY: 35,
-      mapRevealRadius: 18,
+      mapX: 75,
+      mapY: 58,
+      mapRevealRadius: 15,
       scenes: [
         { id: "theatre-backstage", title: "废弃的后台", artwork: "", placeholderTone: "theatre", hotspots: [
           { id: "theatre-program", x: 56, y: 34, size: 7, kind: "key", title: "战前演出单", text: "演出单证明，这份曲谱在战争前并不被视为灾厄。它曾经拥有完全不同的评价。", artwork: "", fullText: "占位完整正文：在这里写出演出单上的节目、日期、演奏者，以及它为何能反驳后世传闻。" },
@@ -51,9 +51,9 @@ window.SONATA_CONTENT = {
     cemetery: {
       name: "主战场墓地",
       requiredKeyClues: 3,
-      mapX: 51,
-      mapY: 70,
-      mapRevealRadius: 18,
+      mapX: 58,
+      mapY: 45,
+      mapRevealRadius: 17,
       scenes: [
         { id: "cemetery-edge", title: "河谷墓园", artwork: "", placeholderTone: "cemetery", hotspots: [
           { id: "cemetery-route", x: 43, y: 52, size: 7, kind: "key", title: "被改写的转移记录", text: "占位摘要：在此填写能够连接战争、曲谱转移与幸存者去向的关键记录。", artwork: "", fullText: "占位完整正文：在这里放入墓地线索的配图与完整故事。" },
@@ -64,9 +64,9 @@ window.SONATA_CONTENT = {
     refuge: {
       name: "西南雪岭 · 废弃隐修院",
       requiredKeyClues: 4,
-      mapX: 31,
-      mapY: 55,
-      mapRevealRadius: 17,
+      mapX: 49,
+      mapY: 77,
+      mapRevealRadius: 15,
       scenes: [
         { id: "refuge-ruins", title: "雪线上的隐修院", artwork: "", placeholderTone: "refuge", hotspots: [
           { id: "refuge-cache", x: 55, y: 43, size: 7, kind: "key", title: "藏在墙后的残存记录", text: "占位摘要：在此填写疑似携带曲谱者最终留下的证据。", artwork: "", fullText: "占位完整正文：在这里放入逃亡路线、藏匿过程或曲谱残页相关的完整内容。" },
@@ -120,4 +120,3 @@ window.SONATA_CONTENT = {
     thanks: ["在此填写姓名"]
   }
 };
-

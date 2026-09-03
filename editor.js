@@ -20,7 +20,7 @@ function loadDraft() {
     const previousSchemaVersion = Number(loaded.schemaVersion || 1);
     loaded.schemaVersion = defaultContent.schemaVersion || 2;
     loaded.prologue = { ...clone(window.SONATA_CONTENT.prologue), ...(loaded.prologue || {}) };
-    loaded.map = { ...clone(window.SONATA_CONTENT.map || { artwork: "assets/weilan-empire-map.svg", shroudOpacity: 0.62, defaultRevealRadius: 18 }), ...(loaded.map || {}) };
+    loaded.map = { ...clone(window.SONATA_CONTENT.map || { artwork: "assets/weilan-mapgen4-187.webp", shroudOpacity: 0.62, defaultRevealRadius: 18 }), ...(loaded.map || {}) };
     loaded.locations = { ...clone(defaultContent.locations || {}), ...(loaded.locations || {}) };
     Object.values(loaded.locations || {}).forEach((location, index) => {
       if (location.requiredKeyClues == null) location.requiredKeyClues = 0;
@@ -135,7 +135,7 @@ function renderLocationEditor() {
   const scene = location.scenes[activeSceneIndex] || location.scenes[0];
   activeSceneIndex = Math.max(0, location.scenes.indexOf(scene));
   const scenePreviewImage = scenePreviewUrls[scene.id] || scene.artwork || "";
-  const mapArtwork = escapeHtml(draft.map?.artwork || "assets/weilan-empire-map.svg");
+  const mapArtwork = escapeHtml(draft.map?.artwork || "assets/weilan-mapgen4-187.webp");
   const mapDots = Object.entries(draft.locations).map(([id, item]) => `<button class="map-editor-dot ${id === activeLocation ? "is-current" : ""}" data-map-location="${escapeHtml(id)}" type="button" style="left:${Number(item.mapX ?? 50)}%;top:${Number(item.mapY ?? 50)}%" title="${escapeHtml(item.name || "未命名地点")}"><span>${escapeHtml(item.name || "未命名地点")}</span></button>`).join("");
   editor.innerHTML = `
     <div class="form-grid">
@@ -472,4 +472,3 @@ renderTimelineEditor();
 renderHistoryEditor();
 renderDreamEditor();
 renderComicsEditor();
-

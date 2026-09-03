@@ -343,9 +343,9 @@ button:focus-visible {
 
 .map-paper {
   position: relative;
-  width: 100%;
+  width: min(100%, calc(100dvh - 190px));
   max-width: 1180px;
-  aspect-ratio: 3 / 2;
+  aspect-ratio: 1;
   overflow: hidden;
   color: #29281f;
   background: #c9bea2;
@@ -357,7 +357,7 @@ button:focus-visible {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   user-select: none;
 }
 
@@ -957,4 +957,3 @@ body.reduce-motion *::after { animation-duration: .01ms !important; transition-d
   .letter-action { align-items:flex-start; flex-direction:column; }
   .letter-action .text-button { margin-left:auto; }
 }
-
