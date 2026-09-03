@@ -26,6 +26,7 @@
         <button data-section="locations" type="button">地点与场景</button>
         <button data-section="timeline" type="button">传闻勘误</button>
         <button data-section="dream" type="button">梦境</button>
+        <button data-section="comics" type="button">图像残页</button>
         <button data-section="history" type="button">完整历史</button>
         <button data-section="credits" type="button">感谢名单</button>
       </nav>
@@ -72,14 +73,20 @@
           <details><summary>预留对话模块（当前关闭）</summary><label class="toggle-label"><input data-path="dream.dialogueEnabled" type="checkbox" />以后启用梦境对话</label><p class="section-help">现在不会显示任何对话。这项只保留代码位置。</p></details>
         </section>
 
+        <section class="editor-section" data-editor-section="comics">
+          <div class="section-heading"><div><p>05</p><h2>图像残页</h2></div></div>
+          <p class="section-help">五页漫画会按照下面选择的调查阶段逐页解锁。漫画图片建议按顺序放入 assets/comics 文件夹；第一次解锁前，游戏中不会出现“图像残页”栏目。</p>
+          <div id="comics-editor"></div>
+        </section>
+
         <section class="editor-section" data-editor-section="history">
-          <div class="section-heading"><div><p>05</p><h2>完整历史正文</h2></div><button id="add-history" type="button">＋ 新增段落</button></div>
-          <p class="section-help">传闻勘误只展示调查结论；全部更正后，玩家会自动翻到这里填写的完整故事纸页。每段也可以搭配一张图片。</p>
+          <div class="section-heading"><div><p>06</p><h2>完整历史正文</h2></div><button id="add-history" type="button">＋ 新增段落</button></div>
+          <p class="section-help">传闻勘误只展示调查结论；全部更正后，玩家会先读完五页漫画，再翻到这里填写的完整故事纸页。每段也可以搭配一张图片。</p>
           <div id="history-editor"></div>
         </section>
 
         <section class="editor-section" data-editor-section="credits">
-          <div class="section-heading"><div><p>06</p><h2>感谢名单</h2></div></div>
+          <div class="section-heading"><div><p>07</p><h2>感谢名单</h2></div></div>
           <p class="section-help">每行填写一个名字。游戏结束后会自动向上滚动。</p>
           <div class="form-grid credits-grid">
             <label>策划／原案<textarea data-credit="planning"></textarea></label>
