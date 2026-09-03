@@ -42,9 +42,11 @@ textarea.long-textarea { min-height:210px; }
 .card-head { display:flex; justify-content:space-between; gap:14px; margin-bottom:14px; }
 .card-head h3 { margin:0; font-size:17px; font-weight:400; }
 .remove-button { border:0; color:#7a3d38; cursor:pointer; background:transparent; }
-.hotspot-preview { position:relative; width:100%; aspect-ratio:16/9; margin:20px 0; overflow:hidden; cursor:crosshair; background:linear-gradient(135deg,#35332b,#81755e); }
+.hotspot-preview { position:relative; width:100%; aspect-ratio:16/9; margin:20px 0; overflow:hidden; cursor:crosshair; background-color:#39362f; background-image:linear-gradient(135deg,#35332b,#81755e); background-position:center; background-repeat:no-repeat; background-size:contain; }
 .hotspot-preview::before { position:absolute; inset:0; display:grid; place-items:center; content:"点击画面放置当前调查点"; color:#d9cfb6; letter-spacing:.15em; font-size:12px; }
+.hotspot-preview.has-image::before { display:none; }
 .preview-dot { position:absolute; z-index:2; width:18px; height:18px; border:2px solid #fff1c6; border-radius:50%; background:#7e433e; transform:translate(-50%,-50%); }
+.preview-dot.is-current { box-shadow:0 0 0 4px #e1c784,0 0 22px #f0d787; }
 .map-placement-preview { position:relative; width:100%; aspect-ratio:3/2; margin:24px 0 8px; overflow:hidden; touch-action:none; cursor:crosshair; background-color:#c9bea3; background-size:cover; background-position:center; box-shadow:inset 0 0 0 1px rgba(55,49,37,.25),0 12px 30px rgba(54,46,31,.14); }
 .map-editor-dot { position:absolute; z-index:2; width:18px; height:18px; padding:0; border:3px solid #f5e9c8; border-radius:50%; cursor:pointer; background:#766f62; box-shadow:0 0 0 2px #4c463c,0 3px 12px rgba(0,0,0,.42); transform:translate(-50%,-50%); }
 .map-editor-dot span { position:absolute; top:22px; left:50%; width:max-content; max-width:150px; padding:4px 7px; color:#332d23; background:rgba(239,230,204,.9); font-size:10px; white-space:nowrap; transform:translateX(-50%); box-shadow:0 2px 7px rgba(52,43,27,.18); }
@@ -64,6 +66,14 @@ textarea.long-textarea { min-height:210px; }
 .evidence-picker small { color:#897e68; font-size:9px; }
 .history-edit-row { display:grid; grid-template-columns:1fr 2fr auto; gap:12px; margin:10px 0; padding:13px; border:1px solid var(--line); }
 .history-meta-fields { display:grid; gap:10px; align-content:start; }
+.comic-title-field { max-width:520px; margin:0 0 22px; }
+.comic-editor-grid { display:grid; gap:20px; }
+.comic-editor-card { padding:20px; border:1px solid var(--line); background:rgba(240,234,217,.5); }
+.comic-editor-card .card-head span { color:#8b806a; font-size:10px; letter-spacing:.1em; }
+.comic-editor-preview { display:grid; place-content:center; gap:8px; width:min(420px,100%); min-height:220px; margin:0 0 20px; color:#7a705d; text-align:center; background:#d4cab0; box-shadow:inset 0 0 0 1px rgba(54,48,37,.2); }
+.comic-editor-preview img { display:block; width:100%; max-height:520px; object-fit:contain; }
+.comic-editor-preview span { font-size:10px; letter-spacing:.18em; }
+.comic-editor-preview b { font-weight:400; }
 .rule-card { margin:26px 0; padding:20px; border-left:3px solid #8c6e54; background:rgba(240,234,217,.55); }
 .rule-card p { margin:8px 0 0; color:#6e6553; line-height:1.7; }
 .dream-form-tabs,.dream-place-tools { display:flex; gap:8px; margin:18px 0; }
@@ -96,5 +106,6 @@ summary { cursor:pointer; }
   .item-list { flex-direction:row; overflow:auto; }
   .item-list button { flex:0 0 auto; }
   .hotspot-row,.timeline-edit-row,.history-edit-row,.evidence-picker { grid-template-columns:1fr; }
+  .comic-editor-card { padding:14px; }
 }
 
