@@ -9,13 +9,19 @@ let activeDreamHotspot = 0;
 let dreamPlacement = "hotspot";
 let dreamDrag = null;
 const dreamPreviewUrls = { black: "", white: "" };
+const scenePreviewUrls = {};
+const comicPreviewUrls = {};
 let saveTimer = null;
 
 function loadDraft() {
   try {
     const loaded = JSON.parse(localStorage.getItem(DRAFT_KEY)) || clone(window.SONATA_CONTENT);
+    const defaultContent = window.SONATA_CONTENT;
+    const previousSchemaVersion = Number(loaded.schemaVersion || 1);
+    loaded.schemaVersion = defaultContent.schemaVersion || 2;
     loaded.prologue = { ...clone(window.SONATA_CONTENT.prologue), ...(loaded.prologue || {}) };
     loaded.map = { ...clone(window.SONATA_CONTENT.map || { artwork: "assets/weilan-empire-map.svg", shroudOpacity: 0.62, defaultRevealRadius: 18 }), ...(loaded.map || {}) };
+    loaded.locations = { ...clone(defaultContent.locations || {}), ...(loaded.locations || {}) };
     Object.values(loaded.locations || {}).forEach((location, index) => {
       if (location.requiredKeyClues == null) location.requiredKeyClues = 0;
       if (location.mapX == null) location.mapX = 38 + (index % 3) * 16;
@@ -29,12 +35,27 @@ function loadDraft() {
         if (spot.fullText == null) spot.fullText = spot.text || "";
       }));
     });
+    loaded.dream = { ...clone(defaultContent.dream || {}), ...(loaded.dream || {}) };
     if (!loaded.dream.hotspots) loaded.dream.hotspots = clone(window.SONATA_CONTENT.dream.hotspots);
     if (!loaded.dream.lightPoint) loaded.dream.lightPoint = clone(window.SONATA_CONTENT.dream.lightPoint);
     if (loaded.dream.unlockAtKeyClues == null) loaded.dream.unlockAtKeyClues = window.SONATA_CONTENT.dream.unlockAtKeyClues || Math.ceil(loaded.keyClueGoal / 2);
     if (loaded.dream.secondFormRequiredKeyClues == null) loaded.dream.secondFormRequiredKeyClues = window.SONATA_CONTENT.dream.secondFormRequiredKeyClues || loaded.keyClueGoal;
     Object.values(loaded.dream.hotspots || {}).flat().forEach((spot) => { if (spot.requiredKeyClues == null) spot.requiredKeyClues = loaded.dream.unlockAtKeyClues; });
     if (!loaded.rumorModules) loaded.rumorModules = clone(window.SONATA_CONTENT.rumorModules || []);
+    loaded.history ||= clone(defaultContent.history || []);
+    loaded.credits = { ...clone(defaultContent.credits || {}), ...(loaded.credits || {}) };
+    loaded.comics = { ...clone(defaultContent.comics || { title: "图像残页", pages: [] }), ...(loaded.comics || {}) };
+    const loadedComicPages = new Map((loaded.comics.pages || []).map((page) => [page.id, page]));
+    loaded.comics.pages = (defaultContent.comics?.pages || []).map((page) => ({ ...clone(page), ...(loadedComicPages.get(page.id) || {}) }));
+    if (previousSchemaVersion < 2) {
+      if (Number(loaded.keyClueGoal || 0) === 3) loaded.keyClueGoal = 5;
+      const rupture = loaded.rumorModules.find((module) => module.id === "rupture");
+      if (rupture && (rupture.evidenceIds || []).length === 1 && rupture.evidenceIds[0] === "theatre-score") {
+        rupture.requiredKeyClues = 5;
+        rupture.evidenceIds = ["theatre-score", "cemetery-route", "refuge-cache"];
+      }
+      if (Number(loaded.dream.secondFormRequiredKeyClues || 0) === 3) loaded.dream.secondFormRequiredKeyClues = 4;
+    }
     delete loaded.timelineModules;
     return loaded;
   }
@@ -89,6 +110,7 @@ document.querySelectorAll("[data-section]").forEach((button) => button.addEventL
   document.querySelectorAll("[data-section]").forEach((item) => item.classList.toggle("is-current", item === button));
   document.querySelectorAll("[data-editor-section]").forEach((section) => section.classList.toggle("is-active", section.dataset.editorSection === button.dataset.section));
   if (button.dataset.section === "timeline") renderTimelineEditor();
+  if (button.dataset.section === "comics") renderComicsEditor();
 }));
 
 function renderLocations() {
@@ -112,6 +134,7 @@ function renderLocationEditor() {
   if (!location) { editor.innerHTML = "<p>请先新增一个地点。</p>"; return; }
   const scene = location.scenes[activeSceneIndex] || location.scenes[0];
   activeSceneIndex = Math.max(0, location.scenes.indexOf(scene));
+  const scenePreviewImage = scenePreviewUrls[scene.id] || scene.artwork || "";
   const mapArtwork = escapeHtml(draft.map?.artwork || "assets/weilan-empire-map.svg");
   const mapDots = Object.entries(draft.locations).map(([id, item]) => `<button class="map-editor-dot ${id === activeLocation ? "is-current" : ""}" data-map-location="${escapeHtml(id)}" type="button" style="left:${Number(item.mapX ?? 50)}%;top:${Number(item.mapY ?? 50)}%" title="${escapeHtml(item.name || "未命名地点")}"><span>${escapeHtml(item.name || "未命名地点")}</span></button>`).join("");
   editor.innerHTML = `
@@ -127,9 +150,10 @@ function renderLocationEditor() {
     <div class="scene-picker">${location.scenes.map((item, index) => `<button class="${index === activeSceneIndex ? "is-current" : ""}" data-scene-index="${index}" type="button">场景 ${index + 1}</button>`).join("")}<button id="add-scene" type="button" ${location.scenes.length >= 3 ? "disabled" : ""}>＋ 新增场景</button></div>
     <div class="form-grid">
       <label>场景标题<input data-scene-field="title" value="${escapeHtml(scene.title || "")}"></label>
-      <label>场景图片文件名<input data-scene-field="artwork" value="${escapeHtml(scene.artwork || "")}" placeholder="assets/scene-01.jpg"></label>
+      <label>场景图片文件名<input data-scene-field="artwork" value="${escapeHtml(scene.artwork || "")}" placeholder="assets/scenes/scene-01.jpg"></label>
+      <label>只在本机预览图片<input id="scene-local-preview" type="file" accept="image/*"><small>图片不会保存或上传，只用来定位调查点。</small></label>
     </div>
-    <div class="hotspot-preview" id="hotspot-preview">${scene.hotspots.map((spot, index) => `<i class="preview-dot" data-dot="${index}" style="left:${spot.x}%;top:${spot.y}%" title="${escapeHtml(spot.title)}"></i>`).join("")}</div>
+    <div class="hotspot-preview ${scenePreviewImage ? "has-image" : ""}" id="hotspot-preview">${scene.hotspots.map((spot, index) => `<i class="preview-dot ${index === activeHotspot ? "is-current" : ""}" data-dot="${index}" style="left:${spot.x}%;top:${spot.y}%" title="${escapeHtml(spot.title)}"></i>`).join("")}</div>
     <div class="card-head"><h3>调查点</h3><button id="add-hotspot" type="button">＋ 新增调查点</button></div>
     <div id="hotspot-editor"></div>
     <button class="remove-button" id="remove-scene" type="button" ${location.scenes.length === 1 ? "disabled" : ""}>删除当前场景</button>
@@ -182,14 +206,30 @@ function renderLocationEditor() {
     draggingMapPoint = false;
     if (mapPreview.hasPointerCapture(event.pointerId)) mapPreview.releasePointerCapture(event.pointerId);
   });
-  editor.querySelectorAll("[data-scene-field]").forEach((input) => input.addEventListener("input", () => { scene[input.dataset.sceneField] = input.value; saveDraft(); }));
+  const hotspotPreview = editor.querySelector("#hotspot-preview");
+  if (scenePreviewImage) hotspotPreview.style.backgroundImage = `url("${scenePreviewImage}")`;
+  editor.querySelectorAll("[data-scene-field]").forEach((input) => input.addEventListener("input", () => {
+    scene[input.dataset.sceneField] = input.value;
+    saveDraft();
+    if (input.dataset.sceneField === "artwork" && !scenePreviewUrls[scene.id]) {
+      hotspotPreview.style.backgroundImage = input.value ? `url("${input.value}")` : "";
+      hotspotPreview.classList.toggle("has-image", Boolean(input.value));
+    }
+  }));
+  editor.querySelector("#scene-local-preview").addEventListener("change", (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    if (scenePreviewUrls[scene.id]) URL.revokeObjectURL(scenePreviewUrls[scene.id]);
+    scenePreviewUrls[scene.id] = URL.createObjectURL(file);
+    renderLocationEditor();
+  });
   editor.querySelectorAll("[data-scene-index]").forEach((button) => button.addEventListener("click", () => { activeSceneIndex = Number(button.dataset.sceneIndex); activeHotspot = 0; renderLocationEditor(); }));
   editor.querySelector("#add-scene").addEventListener("click", () => {
     if (location.scenes.length >= 3) return;
     location.scenes.push({ id: `${activeLocation}-scene-${Date.now()}`, title: "新场景", artwork: "", placeholderTone: "archive", hotspots: [] });
     activeSceneIndex = location.scenes.length - 1; activeHotspot = 0; saveDraft(); renderLocationEditor();
   });
-  editor.querySelector("#hotspot-preview").addEventListener("click", (event) => {
+  hotspotPreview.addEventListener("click", (event) => {
     if (!scene.hotspots.length) return;
     const rect = event.currentTarget.getBoundingClientRect();
     const hotspot = scene.hotspots[activeHotspot] || scene.hotspots[0];
@@ -251,6 +291,62 @@ function renderTimelineEditor() {
       saveDraft();
     }));
     container.appendChild(card);
+  });
+}
+
+function comicUnlockOptions() {
+  const options = [{ value: "always:", label: "开场即解锁" }];
+  for (let count = 1; count <= Number(draft.keyClueGoal || 1); count += 1) {
+    options.push({ value: `key:${count}`, label: `收集到 ${count} 条关键线索` });
+  }
+  (draft.rumorModules || []).forEach((module) => options.push({ value: `rumor:${module.id}`, label: `更正传言：${module.title || module.id}` }));
+  Object.entries(draft.locations || {}).forEach(([id, location]) => options.push({ value: `location:${id}`, label: `完成地点：${location.name || id}` }));
+  Object.values(draft.dream?.hotspots || {}).flat().forEach((spot) => options.push({ value: `dream:${spot.id}`, label: `发现梦境线索：${spot.title || spot.id}` }));
+  return options;
+}
+
+function comicUnlockValue(page) {
+  const unlock = page.unlock || { type: "always" };
+  if (unlock.type === "key") return `key:${unlock.count || unlock.id || 1}`;
+  return `${unlock.type || "always"}:${unlock.id || ""}`;
+}
+
+function renderComicsEditor() {
+  const container = document.querySelector("#comics-editor");
+  if (!container) return;
+  draft.comics ||= { title: "图像残页", pages: [] };
+  const options = comicUnlockOptions();
+  container.innerHTML = `<label class="comic-title-field">栏目名称<input id="comic-section-title" value="${escapeHtml(draft.comics.title || "图像残页")}"></label><div class="comic-editor-grid"></div>`;
+  container.querySelector("#comic-section-title").addEventListener("input", (event) => { draft.comics.title = event.target.value; saveDraft(); });
+  const grid = container.querySelector(".comic-editor-grid");
+  (draft.comics.pages || []).forEach((page, index) => {
+    const card = document.createElement("section");
+    const previewUrl = comicPreviewUrls[page.id] || page.artwork || "";
+    card.className = "comic-editor-card";
+    card.innerHTML = `
+      <div class="card-head"><h3>第 ${index + 1} 页</h3><span>${escapeHtml(page.id)}</span></div>
+      <div class="comic-editor-preview ${previewUrl ? "has-image" : ""}" data-comic-preview>${previewUrl ? `<img src="${escapeHtml(previewUrl)}" alt="第 ${index + 1} 页本机预览">` : `<span>COMIC PAGE ${String(index + 1).padStart(2, "0")}</span><b>尚未选择预览图片</b>`}</div>
+      <div class="form-grid">
+        <label>页标题<input data-comic-field="title" value="${escapeHtml(page.title || "")}"></label>
+        <label>正式图片文件名<input data-comic-field="artwork" value="${escapeHtml(page.artwork || "")}" placeholder="assets/comics/page-${index + 1}.jpg"></label>
+        <label>解锁时机<select data-comic-unlock>${options.map((option) => `<option value="${escapeHtml(option.value)}" ${comicUnlockValue(page) === option.value ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}</select></label>
+        <label>只在本机预览<input data-comic-local type="file" accept="image/*"><small>不会保存或上传，只用于确认版面。</small></label>
+        <label class="full-width">页下说明／小片段<textarea data-comic-field="caption">${escapeHtml(page.caption || "")}</textarea></label>
+      </div>`;
+    card.querySelectorAll("[data-comic-field]").forEach((input) => input.addEventListener("input", () => { page[input.dataset.comicField] = input.value; saveDraft(); }));
+    card.querySelector("[data-comic-unlock]").addEventListener("change", (event) => {
+      const [type, id] = event.target.value.split(":");
+      page.unlock = type === "key" ? { type, count: Number(id) } : type === "always" ? { type } : { type, id };
+      saveDraft();
+    });
+    card.querySelector("[data-comic-local]").addEventListener("change", (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      if (comicPreviewUrls[page.id]) URL.revokeObjectURL(comicPreviewUrls[page.id]);
+      comicPreviewUrls[page.id] = URL.createObjectURL(file);
+      renderComicsEditor();
+    });
+    grid.appendChild(card);
   });
 }
 
@@ -375,4 +471,5 @@ renderLocations();
 renderTimelineEditor();
 renderHistoryEditor();
 renderDreamEditor();
+renderComicsEditor();
 
