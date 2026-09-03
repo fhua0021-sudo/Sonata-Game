@@ -18,7 +18,7 @@ const CONTENT = (() => {
   }
   return window.SONATA_CONTENT;
 })();
-const SAVE_KEY = "sonata-game-progress-v2";
+const SAVE_KEY = "sonata-game-progress-v3";
 
 const screens = [...document.querySelectorAll(".screen")];
 const toast = document.querySelector("#toast");
@@ -51,6 +51,8 @@ let pan = { x: 0, y: 0 };
 let activeTimelineModuleId = null;
 let selectedEvidenceIds = new Set();
 let mapRevealFrame = null;
+let activeComicIndex = 0;
+let comicContinuousMode = false;
 
 const defaultState = {
   sound: true,
@@ -68,6 +70,8 @@ const defaultState = {
   dreamFoundForms: [],
   dreamFoundHotspots: [],
   dreamForm: CONTENT.dream.initialForm || "black",
+  unlockedComicPages: [],
+  comicFinalViewed: false,
   introComplete: false,
   investigationComplete: false
 };
@@ -76,7 +80,13 @@ let state = loadState();
 
 function loadState() {
   try {
-    return { ...JSON.parse(JSON.stringify(defaultState)), ...JSON.parse(localStorage.getItem(SAVE_KEY) || "{}") };
+    const loaded = { ...JSON.parse(JSON.stringify(defaultState)), ...JSON.parse(localStorage.getItem(SAVE_KEY) || "{}") };
+    if (!Array.isArray(loaded.foundClues)) loaded.foundClues = [];
+    if (!Array.isArray(loaded.correctedRumorModules)) loaded.correctedRumorModules = [];
+    if (!Array.isArray(loaded.dreamFoundForms)) loaded.dreamFoundForms = [];
+    if (!Array.isArray(loaded.dreamFoundHotspots)) loaded.dreamFoundHotspots = [];
+    if (!Array.isArray(loaded.unlockedComicPages)) loaded.unlockedComicPages = [];
+    return loaded;
   } catch {
     return JSON.parse(JSON.stringify(defaultState));
   }
@@ -229,6 +239,11 @@ function playTimelineSuccessCue() {
 
 function renderPrologue() {
   const prologue = CONTENT.prologue || {};
+  const title = CONTENT.title || "琴";
+  const subtitle = CONTENT.subtitle || "遗失的和弦";
+  document.querySelector("#game-title").textContent = title;
+  document.querySelector("#game-subtitle").textContent = subtitle;
+  document.title = `${title}：${subtitle}`;
   const sender = prologue.sender || "音乐史系导师";
   const subject = prologue.subject || "关于你提交的研究申请";
   document.querySelector("#mail-summary-sender").textContent = sender;
@@ -260,6 +275,7 @@ function openPanel(id) {
   if (id === "notebook-panel") renderNotebook("records");
   if (id === "timeline-panel") renderTimeline();
   if (id === "dream-panel") renderDream();
+  if (id === "comic-panel") renderComics();
   if (id === "history-panel") renderHistory();
 }
 
@@ -285,6 +301,10 @@ function getTimelineModules() {
   return CONTENT.rumorModules || [];
 }
 
+function getComicPages() {
+  return CONTENT.comics?.pages || [];
+}
+
 function isModuleUnlocked(module) { return getKeyCount() >= (module.requiredKeyClues || 0); }
 function isModuleSolved(moduleId) { return state.correctedRumorModules.includes(moduleId); }
 function areAllModulesSolved() { return getTimelineModules().every((module) => isModuleSolved(module.id)); }
@@ -292,9 +312,32 @@ function areAllModulesSolved() { return getTimelineModules().every((module) => i
 function getFoundClues() { return getAllClues().filter((clue) => state.foundClues.includes(clue.id)); }
 function getKeyCount() { return getFoundClues().filter((clue) => clue.kind === "key").length; }
 function getLocationClues(locationId) { return getAllClues().filter((clue) => clue.locationId === locationId); }
+function isLocationComplete(locationId) {
+  const clues = getLocationClues(locationId);
+  return clues.length > 0 && clues.every((clue) => state.foundClues.includes(clue.id));
+}
 function isLocationUnlocked(locationId, keyCount = getKeyCount()) {
   const location = CONTENT.locations[locationId];
   return Boolean(location) && keyCount >= (location.requiredKeyClues || 0);
+}
+
+function isComicMilestoneComplete(page) {
+  const unlock = page.unlock || {};
+  if (unlock.type === "rumor") return isModuleSolved(unlock.id);
+  if (unlock.type === "location") return isLocationComplete(unlock.id);
+  if (unlock.type === "dream") return state.dreamFoundHotspots.includes(unlock.id);
+  if (unlock.type === "key") return getKeyCount() >= Number(unlock.count || unlock.id || 0);
+  return unlock.type === "always";
+}
+
+function syncComicUnlocks() {
+  state.unlockedComicPages ||= [];
+  const newlyUnlocked = getComicPages().filter((page) => isComicMilestoneComplete(page) && !state.unlockedComicPages.includes(page.id));
+  if (!newlyUnlocked.length) return [];
+  state.unlockedComicPages.push(...newlyUnlocked.map((page) => page.id));
+  localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+  updateProgressUI();
+  return newlyUnlocked;
 }
 
 function renderMapPins() {
@@ -400,11 +443,18 @@ function updateProgressUI() {
   document.body.classList.toggle("reduce-motion", state.reduceMotion);
   const dreamButton = document.querySelector('[data-view="dream"]');
   const dreamDeskItem = document.querySelector("#dream-desk-item");
+  const comicButton = document.querySelector('[data-view="comics"]');
+  const comicDeskItem = document.querySelector("#comic-desk-item");
   dreamButton.classList.toggle("is-hidden", !state.dreamUnlocked);
   dreamDeskItem.classList.toggle("is-hidden", !state.dreamUnlocked);
   dreamButton.classList.toggle("has-update", state.dreamUpdatePending);
   dreamButton.setAttribute("aria-label", state.dreamUpdatePending ? "梦境记录，有新变化" : "梦境记录");
   dreamDeskItem.querySelector("small").textContent = state.dreamUpdatePending ? "有新的细节显现" : "随时重新进入";
+  const comicCount = (state.unlockedComicPages || []).length;
+  const hasComicPages = comicCount > 0;
+  comicButton.classList.toggle("is-hidden", !hasComicPages);
+  comicDeskItem.classList.toggle("is-hidden", !hasComicPages);
+  comicDeskItem.querySelector("small").textContent = hasComicPages ? `已复原 ${comicCount} / ${getComicPages().length} 页` : "查看逐步复原的黑白漫画";
   document.querySelectorAll(".map-pin[data-location]").forEach((pin) => {
     const location = CONTENT.locations[pin.dataset.location];
     const locationUnlocked = isLocationUnlocked(pin.dataset.location);
@@ -513,6 +563,13 @@ function discoverClue(clue, button) {
   }
   if (isNew && currentKeyCount >= CONTENT.keyClueGoal) {
     window.setTimeout(() => showToast("关键记录已齐全，可以开始更正流传的说法。", "前往勘误", () => openPanel("timeline-panel")), state.dreamVisited ? 1750 : 900);
+  }
+  if (isNew) {
+    const newComicPages = syncComicUnlocks();
+    if (newComicPages.length) {
+      const pageNumbers = newComicPages.map((page) => getComicPages().indexOf(page) + 1).join("、");
+      window.setTimeout(() => showToast(`【图像残页已复原：第 ${pageNumbers} 页】`, "查看残页", () => openPanel("comic-panel")), newlyUnlocked.length ? 1500 : 620);
+    }
   }
 }
 
@@ -636,14 +693,19 @@ function submitTimeline() {
     state.rumorSolved = areAllModulesSolved();
     saveState();
     playTimelineSuccessCue();
+    const newComicPages = syncComicUnlocks();
     if (state.rumorSolved) {
-      showToast("【完整故事页已解锁】传闻已经逐一更正，研究稿正在展开。");
+      showToast(newComicPages.length ? "【最后一页图像残页已复原】完整漫画已经可以连续阅读。" : "【完整故事页已解锁】传闻已经逐一更正。", "查看图像残页", () => openPanel("comic-panel"));
       window.setTimeout(() => {
-        openPanel("history-panel");
-        document.querySelector("#history-panel").classList.add("is-revealing");
-        window.setTimeout(() => document.querySelector("#history-panel").classList.remove("is-revealing"), 900);
+        if (getComicPages().length) openPanel("comic-panel");
+        else {
+          openPanel("history-panel");
+          document.querySelector("#history-panel").classList.add("is-revealing");
+          window.setTimeout(() => document.querySelector("#history-panel").classList.remove("is-revealing"), 900);
+        }
       }, state.reduceMotion ? 100 : 760);
     }
+    else if (newComicPages.length) showToast(`【图像残页已复原：第 ${getComicPages().indexOf(newComicPages[0]) + 1} 页】`, "查看残页", () => openPanel("comic-panel"));
     else showToast(`${activeModule.title}已经更正，结论已收入调查簿。`);
     renderTimeline();
   } else {
@@ -734,6 +796,10 @@ function renderDream() {
   const dream = document.querySelector("#dream-scene");
   dream.classList.toggle("is-black", state.dreamForm === "black");
   dream.classList.toggle("is-white", state.dreamForm === "white");
+  const dreamFigure = dream.querySelector(".dream-figure");
+  const dreamArtwork = state.dreamForm === "black" ? CONTENT.dream.blackArtwork : CONTENT.dream.whiteArtwork;
+  dreamFigure.style.backgroundImage = dreamArtwork ? `url("${dreamArtwork}")` : "none";
+  dreamFigure.classList.toggle("has-image", Boolean(dreamArtwork));
   const light = document.querySelector("#light-switch");
   const initialHotspots = (CONTENT.dream.hotspots?.[CONTENT.dream.initialForm] || []).filter((spot) => getKeyCount() >= (spot.requiredKeyClues || 0));
   const initialFormInvestigated = initialHotspots.length > 0 && initialHotspots.every((spot) => state.dreamFoundHotspots.includes(spot.id));
@@ -772,16 +838,111 @@ function discoverDreamClue(clue) {
   saveState();
   playConfirmCue();
   document.querySelector("#dream-caption").textContent = clue.text || "梦境中留下了一处无法解释的细节。";
+  const newComicPages = syncComicUnlocks();
+  if (newComicPages.length) window.setTimeout(() => showToast(`【图像残页已复原：第 ${getComicPages().indexOf(newComicPages[0]) + 1} 页】`, "查看残页", () => openPanel("comic-panel")), 420);
   renderDream();
+}
+
+function renderComics() {
+  const pages = getComicPages();
+  const unlockedIds = new Set(state.unlockedComicPages || []);
+  const unlockedIndexes = pages.map((page, index) => unlockedIds.has(page.id) ? index : -1).filter((index) => index >= 0);
+  if (!unlockedIndexes.length) { closePanels(); return; }
+  if (!unlockedIndexes.includes(activeComicIndex)) activeComicIndex = unlockedIndexes[0];
+  const page = pages[activeComicIndex];
+  document.querySelector("#comic-panel-title").textContent = CONTENT.comics?.title || "图像残页";
+  document.querySelector("#comic-page-count").textContent = `${activeComicIndex + 1} / ${pages.length}`;
+  document.querySelector("#comic-page-title").textContent = page.title || `残页 ${activeComicIndex + 1}`;
+  document.querySelector("#comic-caption").textContent = page.caption || "";
+  const image = document.querySelector("#comic-image");
+  const placeholder = document.querySelector("#comic-placeholder");
+  image.hidden = !page.artwork;
+  placeholder.hidden = Boolean(page.artwork);
+  if (page.artwork) {
+    image.src = page.artwork;
+    image.alt = page.title || `图像残页第 ${activeComicIndex + 1} 页`;
+  } else {
+    image.removeAttribute("src");
+    image.alt = "";
+  }
+  const strip = document.querySelector("#comic-page-strip");
+  strip.innerHTML = "";
+  pages.forEach((item, index) => {
+    const button = document.createElement("button");
+    const unlocked = unlockedIds.has(item.id);
+    button.type = "button";
+    button.disabled = !unlocked;
+    button.classList.toggle("is-current", index === activeComicIndex);
+    button.classList.toggle("is-locked", !unlocked);
+    button.textContent = unlocked ? String(index + 1).padStart(2, "0") : "×";
+    button.setAttribute("aria-label", unlocked ? `阅读第 ${index + 1} 页` : `第 ${index + 1} 页尚未复原`);
+    if (unlocked) button.addEventListener("click", () => { activeComicIndex = index; comicContinuousMode = false; renderComics(); });
+    strip.appendChild(button);
+  });
+  const currentUnlockedPosition = unlockedIndexes.indexOf(activeComicIndex);
+  document.querySelector("#comic-prev").disabled = currentUnlockedPosition <= 0 || comicContinuousMode;
+  document.querySelector("#comic-next").disabled = currentUnlockedPosition >= unlockedIndexes.length - 1 || comicContinuousMode;
+  const allUnlocked = unlockedIndexes.length === pages.length;
+  const continuousToggle = document.querySelector("#comic-continuous-toggle");
+  continuousToggle.hidden = !allUnlocked;
+  continuousToggle.textContent = comicContinuousMode ? "返回单页" : "连续阅读";
+  const reader = document.querySelector("#comic-reader");
+  const continuous = document.querySelector("#comic-continuous");
+  reader.hidden = comicContinuousMode;
+  continuous.hidden = !comicContinuousMode;
+  continuous.innerHTML = "";
+  if (comicContinuousMode) {
+    pages.forEach((item, index) => {
+      const section = document.createElement("section");
+      section.className = "comic-continuous-page";
+      const figure = document.createElement("figure");
+      if (item.artwork) {
+        const pageImage = document.createElement("img");
+        pageImage.src = item.artwork;
+        pageImage.alt = item.title || `图像残页第 ${index + 1} 页`;
+        figure.appendChild(pageImage);
+      } else {
+        const empty = document.createElement("div");
+        empty.className = "comic-placeholder";
+        empty.textContent = `第 ${index + 1} 页漫画图片`;
+        figure.appendChild(empty);
+      }
+      const heading = document.createElement("h3");
+      heading.textContent = item.title || `残页 ${index + 1}`;
+      const caption = document.createElement("p");
+      caption.textContent = item.caption || "";
+      section.append(figure, heading, caption);
+      continuous.appendChild(section);
+    });
+  }
+  document.querySelector("#comic-to-history").hidden = !state.rumorSolved;
 }
 
 function renderHistory() {
   document.querySelector("#history-article").innerHTML = CONTENT.history.map((block) => `<section class="history-block"><div class="history-image" ${block.artwork ? `style="background-image:url('${block.artwork}')"` : ""}>${block.artwork ? "" : "章节配图"}</div><div class="history-copy"><h3>${block.title}</h3><p>${String(block.text || "").replace(/\n/g, "<br>")}</p></div></section>`).join("");
 }
 
+function renderCredits() {
+  document.querySelector("#credits-title").textContent = CONTENT.title || "琴";
+  document.querySelector("#credits-subtitle").textContent = CONTENT.subtitle || "遗失的和弦";
+  const labels = { planning: "策划／原案", artists: "画师", writers: "文手", music: "音乐", thanks: "特别感谢" };
+  const container = document.querySelector("#credits-content");
+  container.innerHTML = "";
+  Object.entries(labels).forEach(([key, label]) => {
+    const names = CONTENT.credits?.[key] || [];
+    if (!names.length) return;
+    const heading = document.createElement("h3");
+    heading.textContent = label;
+    const list = document.createElement("p");
+    list.textContent = names.join("\n");
+    container.append(heading, list);
+  });
+}
+
 function openCredits() {
   state.investigationComplete = true;
   saveState();
+  renderCredits();
   closePanels();
   const credits = document.querySelector("#credits-layer");
   credits.classList.add("is-open");
@@ -792,7 +953,21 @@ function openCredits() {
   roll.style.animation = "";
 }
 
-document.querySelector("#start-game").addEventListener("click", () => { ensureAudio(); resetMailView(); showScreen("prologue"); });
+function updateStartButton() {
+  const start = document.querySelector("#start-game");
+  start.textContent = state.introComplete ? "继续调查" : "开始调查";
+}
+
+document.querySelector("#start-game").addEventListener("click", () => {
+  ensureAudio();
+  if (state.introComplete) {
+    showScreen("map-screen");
+    updateProgressUI();
+    return;
+  }
+  resetMailView();
+  showScreen("prologue");
+});
 document.querySelector("#open-mail").addEventListener("click", () => {
   document.querySelector("#mail-inbox").classList.add("is-read");
   document.querySelector("#mentor-letter").classList.add("is-open");
@@ -801,6 +976,7 @@ document.querySelector("#open-mail").addEventListener("click", () => {
 document.querySelector("#enter-map").addEventListener("click", () => {
   state.introComplete = true;
   saveState();
+  updateStartButton();
   showScreen("map-screen");
   const firstId = CONTENT.prologue?.firstLocation || Object.keys(CONTENT.locations)[0];
   const firstLocation = CONTENT.locations[firstId];
@@ -839,12 +1015,14 @@ document.querySelectorAll(".game-nav button").forEach((button) => {
     const view = button.dataset.view;
     if (view === "map") { closePanels(); return; }
     if (view === "dream" && !state.dreamUnlocked) return;
-    const target = { desk: "desk-panel", notebook: "notebook-panel", timeline: "timeline-panel", dream: "dream-panel" }[view];
+    if (view === "comics" && !(state.unlockedComicPages || []).length) return;
+    const target = { desk: "desk-panel", notebook: "notebook-panel", timeline: "timeline-panel", comics: "comic-panel", dream: "dream-panel" }[view];
     if (target) openPanel(target);
   });
 });
 document.querySelectorAll("[data-open-panel]").forEach((button) => button.addEventListener("click", () => {
   if (button.dataset.openPanel === "dream-panel" && !state.dreamUnlocked) return;
+  if (button.dataset.openPanel === "comic-panel" && !(state.unlockedComicPages || []).length) return;
   openPanel(button.dataset.openPanel);
 }));
 document.querySelectorAll(".panel-close").forEach((button) => button.addEventListener("click", () => {
@@ -873,6 +1051,25 @@ document.querySelector("#light-switch").addEventListener("click", () => {
   renderDream();
   document.querySelector("#dream-caption").textContent = state.dreamForm === "white" ? "光向外铺开，原本被黑暗藏起的轮廓逐渐显现。" : "光重新收束成一点，白色的边界随之退去。";
 });
+document.querySelector("#comic-prev").addEventListener("click", () => {
+  const unlockedIndexes = getComicPages().map((page, index) => (state.unlockedComicPages || []).includes(page.id) ? index : -1).filter((index) => index >= 0);
+  const position = unlockedIndexes.indexOf(activeComicIndex);
+  if (position > 0) { activeComicIndex = unlockedIndexes[position - 1]; renderComics(); }
+});
+document.querySelector("#comic-next").addEventListener("click", () => {
+  const unlockedIndexes = getComicPages().map((page, index) => (state.unlockedComicPages || []).includes(page.id) ? index : -1).filter((index) => index >= 0);
+  const position = unlockedIndexes.indexOf(activeComicIndex);
+  if (position >= 0 && position < unlockedIndexes.length - 1) { activeComicIndex = unlockedIndexes[position + 1]; renderComics(); }
+});
+document.querySelector("#comic-continuous-toggle").addEventListener("click", () => { comicContinuousMode = !comicContinuousMode; renderComics(); });
+document.querySelector("#comic-to-history").addEventListener("click", () => {
+  state.comicFinalViewed = true;
+  saveState();
+  comicContinuousMode = false;
+  openPanel("history-panel");
+  document.querySelector("#history-panel").classList.add("is-revealing");
+  window.setTimeout(() => document.querySelector("#history-panel").classList.remove("is-revealing"), 900);
+});
 
 soundToggle.addEventListener("click", () => { state.sound = !state.sound; saveState(); if (state.sound) playTone(440, .09); showToast(state.sound ? "声音已开启" : "声音已关闭"); });
 document.querySelector("#settings-open").addEventListener("click", () => openPanel("settings-panel"));
@@ -886,6 +1083,8 @@ document.querySelector("#reset-progress").addEventListener("click", () => {
   activeTimelineModuleId = null;
   closePanels();
   updateProgressUI();
+  updateStartButton();
+  showScreen("opening");
   showToast("调查进度已经清除。");
 });
 document.querySelector("#dream-guide-close").addEventListener("click", () => {
@@ -906,6 +1105,7 @@ document.querySelector("#credits-return").addEventListener("click", () => {
   credits.classList.remove("is-open");
   credits.setAttribute("aria-hidden", "true");
   showScreen("opening");
+  updateStartButton();
 });
 
 document.addEventListener("click", (event) => {
@@ -932,5 +1132,8 @@ if (worldMapArt && CONTENT.map?.artwork) {
 window.addEventListener("resize", queueMapShroud);
 renderMapPins();
 renderPrologue();
+syncComicUnlocks();
+renderCredits();
 updateProgressUI();
+updateStartButton();
 
