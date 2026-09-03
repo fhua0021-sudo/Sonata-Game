@@ -1,7 +1,8 @@
 window.SONATA_CONTENT = {
+  schemaVersion: 2,
   title: "琴",
   subtitle: "遗失的和弦",
-  keyClueGoal: 3,
+  keyClueGoal: 5,
   map: {
     artwork: "assets/weilan-empire-map.svg",
     alt: "维兰帝国调查地图",
@@ -21,8 +22,8 @@ window.SONATA_CONTENT = {
     archive: {
       name: "中央档案馆",
       requiredKeyClues: 0,
-      mapX: 56,
-      mapY: 37,
+      mapX: 41,
+      mapY: 27,
       mapRevealRadius: 19,
       scenes: [
         { id: "archive-room", title: "封存目录室", artwork: "", placeholderTone: "archive", hotspots: [
@@ -37,8 +38,8 @@ window.SONATA_CONTENT = {
     theatre: {
       name: "旧歌剧院",
       requiredKeyClues: 1,
-      mapX: 72,
-      mapY: 58,
+      mapX: 61,
+      mapY: 35,
       mapRevealRadius: 18,
       scenes: [
         { id: "theatre-backstage", title: "废弃的后台", artwork: "", placeholderTone: "theatre", hotspots: [
@@ -46,13 +47,49 @@ window.SONATA_CONTENT = {
           { id: "theatre-score", x: 27, y: 68, size: 7, kind: "key", title: "烧焦的排练记录", text: "记录停在战争开始前夕。最后一行提到：曲谱的抄本将被转移至北部。", artwork: "", fullText: "占位完整正文：在这里详细呈现烧焦记录中仍可辨认的文字，以及抄本转移所留下的新疑问。" }
         ] }
       ]
+    },
+    cemetery: {
+      name: "主战场墓地",
+      requiredKeyClues: 3,
+      mapX: 51,
+      mapY: 70,
+      mapRevealRadius: 18,
+      scenes: [
+        { id: "cemetery-edge", title: "河谷墓园", artwork: "", placeholderTone: "cemetery", hotspots: [
+          { id: "cemetery-route", x: 43, y: 52, size: 7, kind: "key", title: "被改写的转移记录", text: "占位摘要：在此填写能够连接战争、曲谱转移与幸存者去向的关键记录。", artwork: "", fullText: "占位完整正文：在这里放入墓地线索的配图与完整故事。" },
+          { id: "cemetery-name", x: 69, y: 36, size: 6, kind: "optional", title: "无名墓碑", text: "占位摘要：在此填写墓园中的补充发现。", artwork: "", fullText: "占位完整正文：这条补充记录不会阻碍主线，可用来承载人物片段。" }
+        ] }
+      ]
+    },
+    refuge: {
+      name: "西南雪岭 · 废弃隐修院",
+      requiredKeyClues: 4,
+      mapX: 31,
+      mapY: 55,
+      mapRevealRadius: 17,
+      scenes: [
+        { id: "refuge-ruins", title: "雪线上的隐修院", artwork: "", placeholderTone: "refuge", hotspots: [
+          { id: "refuge-cache", x: 55, y: 43, size: 7, kind: "key", title: "藏在墙后的残存记录", text: "占位摘要：在此填写疑似携带曲谱者最终留下的证据。", artwork: "", fullText: "占位完整正文：在这里放入逃亡路线、藏匿过程或曲谱残页相关的完整内容。" },
+          { id: "refuge-room", x: 29, y: 64, size: 6, kind: "optional", title: "被使用过的房间", text: "占位摘要：这里曾有人在风雪中短暂停留。", artwork: "", fullText: "占位完整正文：可用于人物生活痕迹或画稿片段。" }
+        ] }
+      ]
     }
   },
   rumorModules: [
     { id: "origin", title: "第一则 · 生来为灾", rumor: "“琴”从诞生起便是一部只会伤害演奏者的禁曲。", correction: "早期档案并未把它归入灾厄记录；后世认知很可能遮蔽了它原本的用途。", requiredKeyClues: 1, evidenceIds: ["archive-ledger"] },
     { id: "reputation", title: "第二则 · 从未受敬", rumor: "战争以前，人们同样畏惧这份曲谱，并禁止公开演奏。", correction: "战前演出资料证明，它曾被公开演奏并得到完全不同的评价。", requiredKeyClues: 2, evidenceIds: ["theatre-program"] },
-    { id: "rupture", title: "第三则 · 乐谱未变", rumor: "后世演奏的版本与最初曲谱完全相同，灾难足以证明它的本质。", correction: "战争中的转移与记录断裂说明，后世接触到的很可能只是缺失部分乐章的残谱。", requiredKeyClues: 3, evidenceIds: ["theatre-score"] }
+    { id: "rupture", title: "第三则 · 乐谱未变", rumor: "后世演奏的版本与最初曲谱完全相同，灾难足以证明它的本质。", correction: "战争中的转移、墓地记录与雪岭遗留物共同表明，后世接触到的很可能只是缺失部分乐章的残谱。", requiredKeyClues: 5, evidenceIds: ["theatre-score", "cemetery-route", "refuge-cache"] }
   ],
+  comics: {
+    title: "图像残页",
+    pages: [
+      { id: "comic-1", title: "残页一", artwork: "", caption: "占位说明：第一次更正传言后复原。", unlock: { type: "rumor", id: "origin" } },
+      { id: "comic-2", title: "残页二", artwork: "", caption: "占位说明：完成旧歌剧院调查后复原。", unlock: { type: "location", id: "theatre" } },
+      { id: "comic-3", title: "残页三", artwork: "", caption: "占位说明：取得第一条梦境线索后复原。", unlock: { type: "dream", id: "dream-black-gaze" } },
+      { id: "comic-4", title: "残页四", artwork: "", caption: "占位说明：完成主战场墓地调查后复原。", unlock: { type: "location", id: "cemetery" } },
+      { id: "comic-5", title: "残页五", artwork: "", caption: "占位说明：最后一则传言完成勘误后复原。", unlock: { type: "rumor", id: "rupture" } }
+    ]
+  },
   history: [
     { title: "乐声繁盛的年代", artwork: "", text: "占位正文：这里将放置根据第一阶段线索复原出的完整故事。正式内容可以在以后替换，不改变页面结构。" },
     { title: "记录断裂之时", artwork: "", text: "占位正文：战争造成的文明断层，使后世无法理解曲谱为何从奖赏变成灾厄。" },
@@ -61,7 +98,7 @@ window.SONATA_CONTENT = {
   dream: {
     initialForm: "black",
     unlockAtKeyClues: 2,
-    secondFormRequiredKeyClues: 3,
+    secondFormRequiredKeyClues: 4,
     whiteArtwork: "",
     blackArtwork: "",
     hotspots: {
