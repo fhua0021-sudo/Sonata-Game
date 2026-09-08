@@ -253,6 +253,7 @@ function playTimelineSuccessCue() {
 
 function renderPrologue() {
   const prologue = CONTENT.prologue || {};
+  const legend = CONTENT.legend || {};
   const title = CONTENT.title || "琴";
   const subtitle = CONTENT.subtitle || "仪式的和弦";
   document.querySelector("#game-title").textContent = title;
@@ -266,9 +267,19 @@ function renderPrologue() {
   document.querySelector("#mail-subject").textContent = subject;
   document.querySelector("#mail-term").textContent = prologue.term || "秋季学期 · 独立研究许可";
   document.querySelector("#mail-signature").textContent = prologue.signature || sender;
-  document.querySelector("#opening-rumor").textContent = prologue.rumor || "“琴”从诞生起便只会招致灾难。";
   const paragraphs = String(prologue.body || "你的研究申请已经通过。请从中央档案馆开始调查。").split(/\n\s*\n/).filter(Boolean);
   document.querySelector("#mail-body").innerHTML = paragraphs.map((paragraph) => `<p>${paragraph.replace(/\n/g, "<br>")}</p>`).join("");
+  document.querySelector("#legend-eyebrow").textContent = legend.eyebrow || "A LEGEND PASSED DOWN";
+  document.querySelector("#legend-title").textContent = legend.title || "关于“琴”的传说";
+  document.querySelector("#legend-note").textContent = legend.note || "这只是流传下来的说法。你的调查将从核对它开始。";
+  document.querySelector("#enter-map").textContent = legend.action || "记下传说，开始调查";
+  const legendParagraphs = String(legend.body || "关于“琴”的传说已经流传了很久。").split(/\n\s*\n/).filter(Boolean);
+  document.querySelector("#legend-body").innerHTML = legendParagraphs.map((paragraph) => `<p>${paragraph.replace(/\n/g, "<br>")}</p>`).join("");
+  const legendArt = document.querySelector("#legend-art");
+  const legendArtwork = String(legend.artwork || "").trim();
+  legendArt.classList.toggle("has-image", Boolean(legendArtwork));
+  legendArt.style.backgroundImage = legendArtwork ? `url("${legendArtwork.replace(/"/g, "%22")}")` : "";
+  legendArt.setAttribute("aria-label", legend.alt || "关于琴的传说形象");
 }
 
 function resetMailView() {
@@ -987,6 +998,9 @@ document.querySelector("#open-mail").addEventListener("click", () => {
   document.querySelector("#mentor-letter").classList.add("is-open");
   document.querySelector("#mentor-letter").setAttribute("aria-hidden", "false");
 });
+document.querySelector("#open-legend").addEventListener("click", () => {
+  showScreen("legend-screen");
+});
 document.querySelector("#enter-map").addEventListener("click", () => {
   state.introComplete = true;
   saveState();
@@ -1151,5 +1165,3 @@ syncComicUnlocks();
 renderCredits();
 updateProgressUI();
 updateStartButton();
-
-
