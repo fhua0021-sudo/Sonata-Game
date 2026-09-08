@@ -22,6 +22,7 @@ function loadDraft() {
     loaded.schemaVersion = defaultContent.schemaVersion || 2;
     if (loaded.subtitle === "遗失的和弦") loaded.subtitle = defaultContent.subtitle;
     loaded.prologue = { ...clone(window.SONATA_CONTENT.prologue), ...(loaded.prologue || {}) };
+    loaded.legend = { ...clone(window.SONATA_CONTENT.legend || {}), ...(loaded.legend || {}) };
     loaded.map = { ...clone(window.SONATA_CONTENT.map || { artwork: "assets/weilan-mapgen4-187.webp", shroudOpacity: 0.62, defaultRevealRadius: 18 }), ...(loaded.map || {}) };
     if (usesLegacyMap) loaded.map = clone(defaultContent.map);
     loaded.locations = { ...clone(defaultContent.locations || {}), ...(loaded.locations || {}) };

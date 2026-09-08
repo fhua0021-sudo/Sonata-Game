@@ -49,6 +49,19 @@
             <label class="full-width">导师邮件正文<textarea data-path="prologue.body"></textarea></label>
             <label class="full-width">开场展示的通行传闻<textarea data-path="prologue.rumor"></textarea></label>
           </div>
+          <div class="editor-subsection-heading">
+            <div><p>OPENING LEGEND</p><h3>开场传说图文页</h3></div>
+            <span>导师邮件之后、地图调查之前显示</span>
+          </div>
+          <div class="form-grid">
+            <label>传说页眉小字<input data-path="legend.eyebrow" type="text" /></label>
+            <label>传说标题<input data-path="legend.title" type="text" /></label>
+            <label>传说配图文件名<input data-path="legend.artwork" type="text" placeholder="assets/legend.jpg" /></label>
+            <label>配图替代说明<input data-path="legend.alt" type="text" /></label>
+            <label class="full-width">传说完整正文<textarea class="long-textarea" data-path="legend.body"></textarea></label>
+            <label class="full-width">正文后的提醒<input data-path="legend.note" type="text" /></label>
+            <label>进入调查按钮文字<input data-path="legend.action" type="text" /></label>
+          </div>
         </section>
 
         <section class="editor-section" data-editor-section="locations">
@@ -104,4 +117,3 @@
     <script src="editor.js"></script>
   </body>
 </html>
-
