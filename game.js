@@ -42,6 +42,10 @@ const mapPinLayer = document.querySelector("#map-pin-layer");
 
 let audioContext = null;
 let activeOscillator = null;
+const backgroundMusic = new Audio("assets/ambient-deep-loop.mp3");
+backgroundMusic.loop = true;
+backgroundMusic.preload = "auto";
+backgroundMusic.volume = 0.11;
 let pendingCueTimer = null;
 let toastTimer = null;
 let currentLocation = null;
@@ -118,6 +122,16 @@ function ensureAudio() {
     if (AudioContext) audioContext = new AudioContext();
   }
   if (audioContext?.state === "suspended") audioContext.resume();
+}
+
+function syncBackgroundMusic() {
+  if (!state.sound) {
+    backgroundMusic.pause();
+    return;
+  }
+  backgroundMusic.play().catch(() => {
+    // Browsers require the first playback to follow a player gesture.
+  });
 }
 
 function playInkScratch(duration = 0.09, volume = 0.055) {
@@ -239,7 +253,6 @@ function playTimelineSuccessCue() {
 
 function renderPrologue() {
   const prologue = CONTENT.prologue || {};
-  const legend = CONTENT.legend || {};
   const title = CONTENT.title || "琴";
   const subtitle = CONTENT.subtitle || "仪式的和弦";
   document.querySelector("#game-title").textContent = title;
@@ -253,19 +266,9 @@ function renderPrologue() {
   document.querySelector("#mail-subject").textContent = subject;
   document.querySelector("#mail-term").textContent = prologue.term || "秋季学期 · 独立研究许可";
   document.querySelector("#mail-signature").textContent = prologue.signature || sender;
+  document.querySelector("#opening-rumor").textContent = prologue.rumor || "“琴”从诞生起便只会招致灾难。";
   const paragraphs = String(prologue.body || "你的研究申请已经通过。请从中央档案馆开始调查。").split(/\n\s*\n/).filter(Boolean);
   document.querySelector("#mail-body").innerHTML = paragraphs.map((paragraph) => `<p>${paragraph.replace(/\n/g, "<br>")}</p>`).join("");
-  document.querySelector("#legend-eyebrow").textContent = legend.eyebrow || "A LEGEND PASSED DOWN";
-  document.querySelector("#legend-title").textContent = legend.title || "关于“琴”的传说";
-  document.querySelector("#legend-note").textContent = legend.note || "这只是流传下来的说法。你的调查将从核对它开始。";
-  document.querySelector("#enter-map").textContent = legend.action || "记下传说，开始调查";
-  const legendParagraphs = String(legend.body || "关于“琴”的传说已经流传了很久。").split(/\n\s*\n/).filter(Boolean);
-  document.querySelector("#legend-body").innerHTML = legendParagraphs.map((paragraph) => `<p>${paragraph.replace(/\n/g, "<br>")}</p>`).join("");
-  const legendArt = document.querySelector("#legend-art");
-  const legendArtwork = String(legend.artwork || "").trim();
-  legendArt.classList.toggle("has-image", Boolean(legendArtwork));
-  legendArt.style.backgroundImage = legendArtwork ? `url("${legendArtwork.replace(/"/g, "%22")}")` : "";
-  legendArt.setAttribute("aria-label", legend.alt || "关于琴的传说形象");
 }
 
 function resetMailView() {
@@ -984,9 +987,6 @@ document.querySelector("#open-mail").addEventListener("click", () => {
   document.querySelector("#mentor-letter").classList.add("is-open");
   document.querySelector("#mentor-letter").setAttribute("aria-hidden", "false");
 });
-document.querySelector("#open-legend").addEventListener("click", () => {
-  showScreen("legend-screen");
-});
 document.querySelector("#enter-map").addEventListener("click", () => {
   state.introComplete = true;
   saveState();
@@ -1085,9 +1085,9 @@ document.querySelector("#comic-to-history").addEventListener("click", () => {
   window.setTimeout(() => document.querySelector("#history-panel").classList.remove("is-revealing"), 900);
 });
 
-soundToggle.addEventListener("click", () => { state.sound = !state.sound; saveState(); if (state.sound) playTone(440, .09); showToast(state.sound ? "声音已开启" : "声音已关闭"); });
+soundToggle.addEventListener("click", () => { state.sound = !state.sound; saveState(); syncBackgroundMusic(); if (state.sound) playTone(440, .09); showToast(state.sound ? "声音已开启" : "声音已关闭"); });
 document.querySelector("#settings-open").addEventListener("click", () => openPanel("settings-panel"));
-settingsSound.addEventListener("change", () => { state.sound = settingsSound.checked; saveState(); if (state.sound) playTone(440, .09); });
+settingsSound.addEventListener("change", () => { state.sound = settingsSound.checked; saveState(); syncBackgroundMusic(); if (state.sound) playTone(440, .09); });
 settingsMotion.addEventListener("change", () => { state.reduceMotion = settingsMotion.checked; saveState(); });
 document.querySelector("#reset-progress").addEventListener("click", () => {
   if (!window.confirm("确定清除这台设备上的全部调查进度吗？")) return;
@@ -1123,6 +1123,7 @@ document.querySelector("#credits-return").addEventListener("click", () => {
 });
 
 document.addEventListener("click", (event) => {
+  syncBackgroundMusic();
   const interactive = event.target.closest("button, a");
   if (!interactive || interactive.disabled || interactive.matches(".hotspot, .dream-hotspot")) return;
   playInkScratch();
@@ -1150,3 +1151,5 @@ syncComicUnlocks();
 renderCredits();
 updateProgressUI();
 updateStartButton();
+
+
