@@ -57,6 +57,8 @@ let selectedEvidenceIds = new Set();
 let mapRevealFrame = null;
 let activeComicIndex = 0;
 let comicContinuousMode = false;
+let legendReturnTarget = null;
+let publicationTruthView = false;
 
 const defaultState = {
   sound: true,
@@ -280,6 +282,13 @@ function renderPrologue() {
   legendArt.classList.toggle("has-image", Boolean(legendArtwork));
   legendArt.style.backgroundImage = legendArtwork ? `url("${legendArtwork.replace(/"/g, "%22")}")` : "";
   legendArt.setAttribute("aria-label", legend.alt || "关于琴的传说形象");
+}
+
+function openLegend(returnTarget = null) {
+  legendReturnTarget = returnTarget;
+  const action = document.querySelector("#enter-map");
+  action.textContent = returnTarget ? "返回传闻刊物" : (CONTENT.legend?.action || "记下传说，开始调查");
+  showScreen("legend-screen");
 }
 
 function resetMailView() {
@@ -649,7 +658,41 @@ function openClueDetail(clueId) {
   openPanel("clue-detail-panel");
 }
 
+function renderRumorPublication() {
+  const legend = CONTENT.legend || {};
+  const modules = getTimelineModules();
+  const solvedCount = modules.filter((module) => isModuleSolved(module.id)).length;
+  const complete = modules.length > 0 && solvedCount === modules.length;
+  const visual = document.querySelector("#publication-visual");
+  const placeholder = document.querySelector("#publication-placeholder");
+  const shadows = document.querySelector("#publication-shadows");
+  const switchMark = document.querySelector("#publication-switch-mark");
+  const showingTruth = complete && publicationTruthView;
+  const artwork = String(showingTruth ? (legend.correctedArtwork || "") : (legend.artwork || "")).trim();
+
+  document.querySelector("#publication-title").textContent = legend.title || "关于“琴”的传说";
+  document.querySelector("#publication-progress").textContent = complete
+    ? (showingTruth ? "真相图像 · 点击可返回原始刊物" : "全部勘误完成 · 点击图像查看另一面")
+    : `已更正 ${solvedCount} / ${modules.length} · 每完成一项，刊物上会留下新的阴影`;
+
+  visual.disabled = !complete;
+  visual.classList.toggle("is-complete", complete);
+  visual.classList.toggle("is-truth", showingTruth);
+  visual.classList.toggle("has-image", Boolean(artwork));
+  visual.style.backgroundImage = artwork ? `url("${artwork.replace(/"/g, "%22")}")` : "";
+  visual.setAttribute("aria-label", complete
+    ? (showingTruth ? (legend.correctedAlt || "完成勘误后显现的真相图像") : `${legend.alt || "关于琴的传说形象"}，点击切换图像`)
+    : `${legend.alt || "关于琴的传说形象"}，已完成 ${solvedCount} 项勘误`);
+  placeholder.textContent = showingTruth ? "真相图像" : "传说配图";
+  placeholder.hidden = Boolean(artwork);
+  switchMark.textContent = complete ? (showingTruth ? "点击返回原始刊物" : "点击翻到刊物的另一面") : "勘误完成后可切换图像";
+  shadows.innerHTML = modules.map((module, index) =>
+    `<i class="publication-shadow ${isModuleSolved(module.id) ? "is-visible" : ""}" style="--shadow-index:${index}" aria-hidden="true"></i>`
+  ).join("");
+}
+
 function renderTimeline() {
+  renderRumorPublication();
   const container = document.querySelector("#timeline-cards");
   const intro = document.querySelector("#timeline-intro");
   const moduleContainer = document.querySelector("#timeline-modules");
@@ -999,9 +1042,25 @@ document.querySelector("#open-mail").addEventListener("click", () => {
   document.querySelector("#mentor-letter").setAttribute("aria-hidden", "false");
 });
 document.querySelector("#open-legend").addEventListener("click", () => {
-  showScreen("legend-screen");
+  openLegend(null);
+});
+document.querySelector("#open-publication-legend").addEventListener("click", () => {
+  openLegend("timeline-panel");
+});
+document.querySelector("#publication-visual").addEventListener("click", () => {
+  if (!state.rumorSolved) return;
+  publicationTruthView = !publicationTruthView;
+  playTone(publicationTruthView ? 659.25 : 523.25, 0.12, 0.028, 1.002);
+  renderRumorPublication();
 });
 document.querySelector("#enter-map").addEventListener("click", () => {
+  if (legendReturnTarget) {
+    const target = legendReturnTarget;
+    legendReturnTarget = null;
+    showScreen("map-screen");
+    openPanel(target);
+    return;
+  }
   state.introComplete = true;
   saveState();
   updateStartButton();
