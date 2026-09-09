@@ -116,7 +116,7 @@
           <button type="button" data-view="desk">书桌</button>
           <button class="is-current" type="button" data-view="map">地图</button>
           <button type="button" data-view="notebook">调查簿</button>
-          <button type="button" data-view="timeline">传闻刊物</button>
+          <button type="button" data-view="timeline">传闻勘误</button>
           <button class="is-hidden" type="button" data-view="comics">图像残页</button>
           <button class="is-hidden" type="button" data-view="dream" aria-label="梦境记录">梦境<i class="nav-update-dot" aria-hidden="true"></i></button>
         </nav>
@@ -159,7 +159,7 @@
             <header><p>PRIVATE STUDY</p><h2>调查书桌</h2></header>
             <div class="desk-grid">
               <button class="desk-item" data-open-panel="notebook-panel" type="button"><span>01</span><b>调查簿</b><small>查看自动归档的记录</small></button>
-              <button class="desk-item" data-open-panel="timeline-panel" type="button"><span>02</span><b>传闻刊物</b><small>重读传说，并用调查记录逐项勘误</small></button>
+              <button class="desk-item" data-open-panel="timeline-panel" type="button"><span>02</span><b>传闻勘误</b><small>重读原始传说，并用调查记录逐项更正</small></button>
               <button class="desk-item is-hidden" id="dream-desk-item" data-open-panel="dream-panel" type="button"><span>03</span><b>梦境记录</b><small>随时重新进入</small></button>
               <button class="desk-item is-hidden" id="comic-desk-item" data-open-panel="comic-panel" type="button"><span>04</span><b>图像残页</b><small>查看逐步复原的黑白漫画</small></button>
             </div>
@@ -191,7 +191,7 @@
 
         <section class="panel-layer" id="timeline-panel" aria-hidden="true">
           <div class="panel-page timeline-page">
-            <header class="page-header"><div><p>ARCHIVED LEGEND</p><h2>传闻刊物</h2></div><button class="panel-close" type="button">返回地图</button></header>
+            <header class="page-header"><div><p>ERRATA</p><h2>传闻勘误</h2></div><button class="panel-close" type="button">返回地图</button></header>
             <section class="rumor-publication" aria-labelledby="publication-title">
               <button class="publication-visual" id="publication-visual" type="button" disabled>
                 <span class="publication-placeholder" id="publication-placeholder">传说配图</span>
@@ -202,7 +202,10 @@
                 <p>LEGEND FILE · NO. 01</p>
                 <h3 id="publication-title">关于“琴”的传说</h3>
                 <p id="publication-progress">已更正 0 / 3</p>
-                <button class="record-link" id="open-publication-legend" type="button">重读完整传说 <span>→</span></button>
+                <div class="publication-actions">
+                  <button class="record-link" id="open-publication-legend" type="button">重读完整传说 <span>→</span></button>
+                  <button class="record-link" id="publication-toggle" type="button" hidden>切换图像 <span>↔</span></button>
+                </div>
               </div>
             </section>
             <div class="timeline-section-heading"><span>ERRATA</span><h3>传闻勘误</h3></div>
@@ -291,6 +294,19 @@
             <label class="setting-row"><span><b>声音</b><small>背景音乐、短音提示与梦境音乐</small></span><input id="settings-sound" type="checkbox" checked /></label>
             <label class="setting-row"><span><b>减少动态效果</b><small>关闭较明显的移动和切换动画</small></span><input id="settings-motion" type="checkbox" /></label>
             <button class="danger-button" id="reset-progress" type="button">清除本机调查进度</button>
+          </div>
+        </section>
+
+        <section class="publication-lightbox" id="publication-lightbox" role="dialog" aria-modal="true" aria-label="真相图像放大查看" aria-hidden="true">
+          <button class="publication-lightbox-close" id="publication-lightbox-close" type="button" aria-label="关闭放大图像">×</button>
+          <div class="publication-lightbox-stage">
+            <img id="publication-lightbox-image" alt="" draggable="false" />
+          </div>
+          <div class="publication-lightbox-controls" aria-label="图像缩放">
+            <button id="publication-zoom-out" type="button" aria-label="缩小">−</button>
+            <span id="publication-zoom-value">100%</span>
+            <button id="publication-zoom-in" type="button" aria-label="放大">＋</button>
+            <button id="publication-zoom-reset" type="button">复位</button>
           </div>
         </section>
 
