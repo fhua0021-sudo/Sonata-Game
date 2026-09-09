@@ -59,6 +59,7 @@ let activeComicIndex = 0;
 let comicContinuousMode = false;
 let legendReturnTarget = null;
 let publicationTruthView = false;
+let publicationZoom = 1;
 
 const defaultState = {
   sound: true,
@@ -287,7 +288,7 @@ function renderPrologue() {
 function openLegend(returnTarget = null) {
   legendReturnTarget = returnTarget;
   const action = document.querySelector("#enter-map");
-  action.textContent = returnTarget ? "返回传闻刊物" : (CONTENT.legend?.action || "记下传说，开始调查");
+  action.textContent = returnTarget ? "返回传闻勘误" : (CONTENT.legend?.action || "记下传说，开始调查");
   showScreen("legend-screen");
 }
 
@@ -667,6 +668,7 @@ function renderRumorPublication() {
   const placeholder = document.querySelector("#publication-placeholder");
   const shadows = document.querySelector("#publication-shadows");
   const switchMark = document.querySelector("#publication-switch-mark");
+  const toggle = document.querySelector("#publication-toggle");
   const showingTruth = complete && publicationTruthView;
   const artwork = String(showingTruth ? (legend.correctedArtwork || "") : (legend.artwork || "")).trim();
 
@@ -685,10 +687,44 @@ function renderRumorPublication() {
     : `${legend.alt || "关于琴的传说形象"}，已完成 ${solvedCount} 项勘误`);
   placeholder.textContent = showingTruth ? "真相图像" : "传说配图";
   placeholder.hidden = Boolean(artwork);
-  switchMark.textContent = complete ? (showingTruth ? "点击返回原始刊物" : "点击翻到刊物的另一面") : "勘误完成后可切换图像";
+  switchMark.textContent = complete ? (showingTruth ? "点击放大观赏真相图" : "点击翻到刊物的另一面") : "勘误完成后可切换图像";
+  toggle.hidden = !complete;
+  toggle.innerHTML = showingTruth ? '返回原始传说图 <span>↔</span>' : '切换至真相图 <span>↔</span>';
   shadows.innerHTML = modules.map((module, index) =>
     `<i class="publication-shadow ${isModuleSolved(module.id) ? "is-visible" : ""}" style="--shadow-index:${index}" aria-hidden="true"></i>`
   ).join("");
+}
+
+function setPublicationZoom(nextZoom) {
+  publicationZoom = Math.min(3, Math.max(1, nextZoom));
+  document.querySelector("#publication-lightbox-image").style.transform = `scale(${publicationZoom})`;
+  document.querySelector("#publication-zoom-value").textContent = `${Math.round(publicationZoom * 100)}%`;
+  document.querySelector("#publication-zoom-out").disabled = publicationZoom <= 1;
+  document.querySelector("#publication-zoom-in").disabled = publicationZoom >= 3;
+}
+
+function openPublicationLightbox() {
+  const legend = CONTENT.legend || {};
+  const artwork = String(legend.correctedArtwork || "").trim();
+  if (!artwork) {
+    showToast("请先在编辑页填写“完成勘误后的图”，即可放大查看。");
+    return;
+  }
+  const image = document.querySelector("#publication-lightbox-image");
+  image.src = artwork;
+  image.alt = legend.correctedAlt || "完成勘误后显现的真相图像";
+  setPublicationZoom(1);
+  const lightbox = document.querySelector("#publication-lightbox");
+  lightbox.classList.add("is-open");
+  lightbox.setAttribute("aria-hidden", "false");
+  document.querySelector("#publication-lightbox-close").focus();
+}
+
+function closePublicationLightbox() {
+  const lightbox = document.querySelector("#publication-lightbox");
+  lightbox.classList.remove("is-open");
+  lightbox.setAttribute("aria-hidden", "true");
+  setPublicationZoom(1);
 }
 
 function renderTimeline() {
@@ -1049,9 +1085,29 @@ document.querySelector("#open-publication-legend").addEventListener("click", () 
 });
 document.querySelector("#publication-visual").addEventListener("click", () => {
   if (!state.rumorSolved) return;
+  if (publicationTruthView) {
+    openPublicationLightbox();
+    return;
+  }
+  publicationTruthView = true;
+  playTone(659.25, 0.12, 0.028, 1.002);
+  renderRumorPublication();
+});
+document.querySelector("#publication-toggle").addEventListener("click", () => {
+  if (!state.rumorSolved) return;
   publicationTruthView = !publicationTruthView;
   playTone(publicationTruthView ? 659.25 : 523.25, 0.12, 0.028, 1.002);
   renderRumorPublication();
+});
+document.querySelector("#publication-lightbox-close").addEventListener("click", closePublicationLightbox);
+document.querySelector("#publication-zoom-out").addEventListener("click", () => setPublicationZoom(publicationZoom - 0.25));
+document.querySelector("#publication-zoom-in").addEventListener("click", () => setPublicationZoom(publicationZoom + 0.25));
+document.querySelector("#publication-zoom-reset").addEventListener("click", () => setPublicationZoom(1));
+document.querySelector("#publication-lightbox").addEventListener("click", (event) => {
+  if (event.target === event.currentTarget) closePublicationLightbox();
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && document.querySelector("#publication-lightbox").classList.contains("is-open")) closePublicationLightbox();
 });
 document.querySelector("#enter-map").addEventListener("click", () => {
   if (legendReturnTarget) {
