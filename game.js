@@ -262,8 +262,9 @@ function playLegendHoverCue() {
   playInkScratch(0.055, 0.014);
 }
 
-function playLegendUnderlineCue() {
-  playInkScratch(0.46, 0.038);
+function playLegendUnderlineCue(characterCount = 24) {
+  const duration = Math.min(1.05, 0.24 + Math.max(1, characterCount) * 0.018);
+  playInkScratch(duration, 0.036);
 }
 
 function playTimelineSuccessCue() {
@@ -417,7 +418,8 @@ function markLegendClaim(moduleId) {
   const firstJudgment = state.legendJudgments.length === 0;
   state.legendJudgments.push(moduleId);
   saveState();
-  playLegendUnderlineCue();
+  const selectedClaim = getLegendClaims().find((claim) => claim.module.id === moduleId);
+  playLegendUnderlineCue(selectedClaim?.excerpt.length || 24);
   renderLegendPassages(moduleId);
 
   const actionLabel = state.introComplete ? "前往勘误" : "";
@@ -475,7 +477,14 @@ function renderLegendPassages(animatedModuleId = "") {
       button.classList.toggle("is-inking", judged && claim.module.id === animatedModuleId);
       button.setAttribute("aria-pressed", String(judged));
       button.setAttribute("aria-label", judged ? `${claim.excerpt}，已记为疑点` : claim.excerpt);
-      button.textContent = claim.excerpt;
+      Array.from(claim.excerpt).forEach((character, characterIndex) => {
+        const characterMark = document.createElement("span");
+        characterMark.className = "legend-ink-char";
+        characterMark.setAttribute("aria-hidden", "true");
+        characterMark.style.setProperty("--ink-order", characterIndex);
+        characterMark.textContent = character === " " ? "\u00a0" : character;
+        button.appendChild(characterMark);
+      });
       button.addEventListener("pointerenter", () => {
         playLegendHoverCue();
         quillCursor?.classList.add("is-poised");
