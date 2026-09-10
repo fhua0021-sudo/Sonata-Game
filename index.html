@@ -119,7 +119,7 @@
           <button type="button" data-view="desk">书桌</button>
           <button class="is-current" type="button" data-view="map">地图</button>
           <button type="button" data-view="notebook">调查簿</button>
-          <button class="is-hidden" id="timeline-nav-button" type="button" data-view="timeline">传闻勘误</button>
+          <button id="timeline-nav-button" type="button" data-view="timeline">传闻勘误</button>
           <button class="is-hidden" type="button" data-view="comics">图像残页</button>
           <button class="is-hidden" type="button" data-view="dream" aria-label="梦境记录">梦境<i class="nav-update-dot" aria-hidden="true"></i></button>
         </nav>
@@ -162,7 +162,7 @@
             <header><p>PRIVATE STUDY</p><h2>调查书桌</h2></header>
             <div class="desk-grid">
               <button class="desk-item" data-open-panel="notebook-panel" type="button"><span>01</span><b>调查簿</b><small>查看自动归档的记录</small></button>
-              <button class="desk-item is-hidden" id="timeline-desk-item" data-open-panel="timeline-panel" type="button"><span>02</span><b>传闻勘误</b><small>重读原始传说，并用调查记录逐项更正</small></button>
+              <button class="desk-item" id="timeline-desk-item" data-open-panel="timeline-panel" type="button"><span>02</span><b>传闻勘误</b><small>重读原始传说，并用调查记录逐项更正</small></button>
               <button class="desk-item is-hidden" id="dream-desk-item" data-open-panel="dream-panel" type="button"><span>03</span><b>梦境记录</b><small>随时重新进入</small></button>
               <button class="desk-item is-hidden" id="comic-desk-item" data-open-panel="comic-panel" type="button"><span>04</span><b>图像残页</b><small>查看逐步复原的黑白漫画</small></button>
             </div>
