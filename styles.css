@@ -319,8 +319,14 @@ button:focus-visible {
 .legend-rule { display: flex; align-items: center; gap: 12px; margin: 27px 0; color: #77504a; }
 .legend-rule i { flex: 1; height: 1px; background: rgba(79, 62, 46, .3); }
 .legend-rule b { font-weight: 400; }
+.legend-search-prompt { margin:0 0 14px; color:#7b6d59; font-size:13px; line-height:1.7; }
 .legend-body { font-size: clamp(16px, 1.6vw, 18px); line-height: 2.05; }
-.legend-body p { margin: 0 0 20px; }
+.legend-body p { margin: 0 0 20px; white-space:pre-line; }
+.legend-claim { display:inline; margin:0; padding:1px 2px; border:0; border-bottom:1px dashed transparent; color:inherit; cursor:pointer; background:transparent; font:inherit; line-height:inherit; text-align:left; transition:color .16s ease,background .16s ease,border-color .16s ease; box-decoration-break:clone; -webkit-box-decoration-break:clone; }
+.legend-claim:hover,.legend-claim:focus-visible { border-bottom-color:#81544c; outline:none; background:rgba(119,76,69,.08); }
+.legend-claim.is-judged { color:#6f4d47; border-bottom:1px solid #81544c; background:linear-gradient(transparent 72%,rgba(125,76,67,.16) 72%); }
+.legend-claim.is-judged::after { content:" 待核"; color:#8a665d; font-size:10px; letter-spacing:.12em; white-space:nowrap; }
+.legend-search-status { margin:20px 0 0; color:#79534c; font-size:12px; letter-spacing:.1em; }
 .legend-note { margin: 30px 0 0; padding: 15px 18px; color: #685f50; border-left: 2px solid #7b4a45; background: rgba(113, 62, 59, .06); font-size: 13px; line-height: 1.8; }
 .legend-copy .text-button { position: relative; }
 
@@ -360,6 +366,8 @@ button:focus-visible {
   align-items: center;
   gap: 24px;
 }
+.header-legend-button { padding:6px 0; border:0; border-bottom:1px solid rgba(222,210,184,.36); color:#c5bca9; cursor:pointer; background:transparent; font-family:inherit; font-size:12px; letter-spacing:.08em; }
+.header-legend-button:hover,.header-legend-button:focus-visible { color:var(--paper-light); border-bottom-color:#a48f63; outline:none; }
 
 .progress-copy {
   color: #a8a18f;
@@ -647,6 +655,8 @@ button:focus-visible {
   .subtitle { font-size: 15px; letter-spacing: 0.36em; text-indent: 0.36em; }
   .game-header { min-height: 78px; padding: 14px 18px; }
   .game-header h2 { font-size: 19px; }
+  .header-actions { gap:14px; }
+  .header-legend-button { font-size:11px; }
   .progress-copy { display: none; }
   .map-wrap { align-content:start; min-height:0; }
   .map-pin { flex-direction: column; align-items: flex-start; gap: 7px; }
@@ -897,6 +907,13 @@ button:focus-visible {
 .publication-lightbox-controls span { min-width:62px; text-align:center; font-size:12px; letter-spacing:.08em; }
 .timeline-section-heading { display:flex; align-items:baseline; gap:14px; margin-top:8px; padding-top:28px; border-top:1px solid rgba(60,53,40,.18); }
 .timeline-section-heading h3 { margin:0; font-size:20px; font-weight:400; }
+.errata-readiness { display:grid; grid-template-columns:repeat(2,minmax(120px,190px)) 1fr; gap:12px; align-items:center; margin:18px 0 8px; padding:14px 16px; border:1px solid rgba(60,53,40,.2); background:rgba(255,255,255,.1); }
+.errata-readiness > div { display:flex; justify-content:space-between; gap:14px; padding-right:14px; border-right:1px solid rgba(60,53,40,.16); }
+.errata-readiness span { color:#756b58; font-size:12px; }
+.errata-readiness b { color:#6f4b44; font-size:13px; font-weight:400; }
+.errata-readiness p { margin:0; color:#736956; font-size:12px; line-height:1.6; }
+.errata-readiness.is-ready { border-color:rgba(73,112,102,.48); background:rgba(79,127,123,.1); }
+.errata-readiness.is-ready b { color:#456c63; }
 .timeline-intro { margin: 20px 0 28px; color: #6f6654; line-height: 1.8; }
 .timeline-modules { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:0 0 24px; }
 .timeline-module { display:grid; gap:6px; min-height:92px; padding:14px; border:1px solid rgba(59,52,39,.22); color:#625a49; cursor:pointer; text-align:left; background:rgba(255,255,255,.1); }
@@ -1059,6 +1076,9 @@ body.reduce-motion *::after { animation-duration: .01ms !important; transition-d
   .record-entry { grid-template-columns: 1fr; gap: 6px; }
   .timeline-card { grid-template-columns: auto 1fr; }
   .timeline-modules { grid-template-columns:1fr; }
+  .errata-readiness { grid-template-columns:1fr 1fr; }
+  .errata-readiness p { grid-column:1 / -1; }
+  .errata-readiness > div:nth-child(2) { border-right:0; }
   .rumor-publication { grid-template-columns:1fr; gap:18px; }
   .publication-visual { max-width:420px; justify-self:center; }
   .publication-lightbox { padding:18px 10px; }
