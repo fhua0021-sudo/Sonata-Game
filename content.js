@@ -220,6 +220,7 @@ window.SONATA_CONTENT = {
     {
       "id": "origin",
       "title": "第一则 · 生来为灾",
+      "legendExcerpt": "人类一旦演奏或是聆听，便不可避免地遭到无法想象的可怕灾难。",
       "rumor": "“琴”从诞生起便是一部只会伤害演奏者的禁曲。",
       "correction": "早期档案并未把它归入灾厄记录；后世认知很可能遮蔽了它原本的用途。",
       "requiredKeyClues": 1,
@@ -230,6 +231,7 @@ window.SONATA_CONTENT = {
     {
       "id": "reputation",
       "title": "第二则 · 从未受敬",
+      "legendExcerpt": "人类历史上最严重的战争，正是因《黑暗协奏曲》而起。",
       "rumor": "战争以前，人们同样畏惧这份曲谱，并禁止公开演奏。",
       "correction": "战前演出资料证明，它曾被公开演奏并得到完全不同的评价。",
       "requiredKeyClues": 2,
@@ -240,6 +242,7 @@ window.SONATA_CONTENT = {
     {
       "id": "rupture",
       "title": "第三则 · 乐谱未变",
+      "legendExcerpt": "然而直到今天，仍有部分乐师受它蛊惑，私下誊抄并传递曲谱。",
       "rumor": "后世演奏的版本与最初曲谱完全相同，灾难足以证明它的本质。",
       "correction": "战争中的转移与记录断裂说明，后世接触到的很可能只是缺失部分乐章的残谱。",
       "requiredKeyClues": 5,
