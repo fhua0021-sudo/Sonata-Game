@@ -54,6 +54,11 @@ function loadDraft() {
     if (loaded.dream.secondFormRequiredKeyClues == null) loaded.dream.secondFormRequiredKeyClues = window.SONATA_CONTENT.dream.secondFormRequiredKeyClues || loaded.keyClueGoal;
     Object.values(loaded.dream.hotspots || {}).flat().forEach((spot) => { if (spot.requiredKeyClues == null) spot.requiredKeyClues = loaded.dream.unlockAtKeyClues; });
     if (!loaded.rumorModules) loaded.rumorModules = clone(window.SONATA_CONTENT.rumorModules || []);
+    const legendParagraphs = String(loaded.legend?.body || "").split(/\n\s*\n/).map((item) => item.trim()).filter(Boolean);
+    const defaultRumors = new Map((defaultContent.rumorModules || []).map((module) => [module.id, module]));
+    loaded.rumorModules.forEach((module, index) => {
+      if (module.legendExcerpt == null) module.legendExcerpt = defaultRumors.get(module.id)?.legendExcerpt || legendParagraphs[index] || "";
+    });
     loaded.history ||= clone(defaultContent.history || []);
     loaded.credits = { ...clone(defaultContent.credits || {}), ...(loaded.credits || {}) };
     loaded.comics = { ...clone(defaultContent.comics || { title: "图像残页", pages: [] }), ...(loaded.comics || {}) };
@@ -295,7 +300,7 @@ function renderTimelineEditor() {
     const card = document.createElement("section");
     card.className = "timeline-module-editor";
     module.evidenceIds ||= [];
-    card.innerHTML = `<div class="card-head"><h3>传闻 ${moduleIndex + 1}</h3><button class="remove-button" data-remove-module type="button">删除传闻</button></div><div class="form-grid"><label>模块名称<input data-module-field="title" value="${escapeHtml(module.title || "")}"></label><label>开放所需关键线索<input data-module-field="requiredKeyClues" type="number" min="0" value="${module.requiredKeyClues || 0}"></label><label class="full-width">流传的错误说法<textarea data-module-field="rumor">${escapeHtml(module.rumor || "")}</textarea></label><label class="full-width">成功后显示的更正结论<textarea data-module-field="correction">${escapeHtml(module.correction || "")}</textarea></label></div><div class="card-head"><h3>能够反驳它的证据</h3></div><div class="evidence-picker">${clues.map((clue) => `<label><input type="checkbox" data-evidence-id="${escapeHtml(clue.id)}" ${module.evidenceIds.includes(clue.id) ? "checked" : ""}><span><b>${escapeHtml(clue.title || "未命名调查点")}</b><small>${escapeHtml(clue.id)}</small></span></label>`).join("") || "<p class=\"section-help\">请先在地点中新增调查点。</p>"}</div>`;
+    card.innerHTML = `<div class="card-head"><h3>传闻 ${moduleIndex + 1}</h3><button class="remove-button" data-remove-module type="button">删除传闻</button></div><div class="form-grid"><label>模块名称<input data-module-field="title" value="${escapeHtml(module.title || "")}"></label><label class="full-width">传说正文中要点击的原句<textarea data-module-field="legendExcerpt" placeholder="从开场传说正文中复制一整句到这里">${escapeHtml(module.legendExcerpt || "")}</textarea><small>必须与传说正文完全一致。玩家点击这句话后，才会把它记为疑点。</small></label><label class="full-width">流传的错误说法<textarea data-module-field="rumor">${escapeHtml(module.rumor || "")}</textarea></label><label class="full-width">成功后显示的更正结论<textarea data-module-field="correction">${escapeHtml(module.correction || "")}</textarea></label></div><div class="card-head"><h3>能够反驳它的证据</h3></div><div class="evidence-picker">${clues.map((clue) => `<label><input type="checkbox" data-evidence-id="${escapeHtml(clue.id)}" ${module.evidenceIds.includes(clue.id) ? "checked" : ""}><span><b>${escapeHtml(clue.title || "未命名调查点")}</b><small>${escapeHtml(clue.id)}</small></span></label>`).join("") || "<p class=\"section-help\">请先在地点中新增调查点。</p>"}</div>`;
     card.querySelectorAll("[data-module-field]").forEach((input) => input.addEventListener("input", () => { module[input.dataset.moduleField] = input.type === "number" ? Number(input.value) : input.value; saveDraft(); }));
     card.querySelector("[data-remove-module]").addEventListener("click", () => { if (!confirm("确定删除这条传闻吗？")) return; draft.rumorModules.splice(moduleIndex, 1); saveDraft(); renderTimelineEditor(); });
     card.querySelectorAll("[data-evidence-id]").forEach((input) => input.addEventListener("change", () => {
@@ -450,7 +455,7 @@ document.querySelector("#add-location").addEventListener("click", () => {
 });
 document.querySelector("#add-timeline-module").addEventListener("click", () => {
   const id = `module-${Date.now()}`;
-  draft.rumorModules.push({ id, title: "新传闻", rumor: "在此填写流传的错误说法。", correction: "在此填写更正后的结论。", requiredKeyClues: draft.keyClueGoal, evidenceIds: [] });
+  draft.rumorModules.push({ id, title: "新传闻", legendExcerpt: "", rumor: "在此填写流传的错误说法。", correction: "在此填写更正后的结论。", requiredKeyClues: draft.keyClueGoal, evidenceIds: [] });
   saveDraft(); renderTimelineEditor();
 });
 document.querySelector("#add-history").addEventListener("click", () => { draft.history.push({ title: "新段落", artwork: "", text: "在此填写复原后的完整故事正文。" }); saveDraft(); renderHistoryEditor(); });
