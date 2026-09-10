@@ -67,6 +67,7 @@ const defaultState = {
   foundClues: [],
   rumorSolved: false,
   correctedRumorModules: [],
+  legendJudgments: [],
   dreamUnlocked: false,
   dreamPrompted: false,
   dreamGuidanceSeen: false,
@@ -90,6 +91,10 @@ function loadState() {
     const loaded = { ...JSON.parse(JSON.stringify(defaultState)), ...JSON.parse(localStorage.getItem(SAVE_KEY) || "{}") };
     if (!Array.isArray(loaded.foundClues)) loaded.foundClues = [];
     if (!Array.isArray(loaded.correctedRumorModules)) loaded.correctedRumorModules = [];
+    if (!Array.isArray(loaded.legendJudgments)) loaded.legendJudgments = [];
+    loaded.correctedRumorModules.forEach((moduleId) => {
+      if (!loaded.legendJudgments.includes(moduleId)) loaded.legendJudgments.push(moduleId);
+    });
     if (!Array.isArray(loaded.dreamFoundForms)) loaded.dreamFoundForms = [];
     if (!Array.isArray(loaded.dreamFoundHotspots)) loaded.dreamFoundHotspots = [];
     if (!Array.isArray(loaded.unlockedComicPages)) loaded.unlockedComicPages = [];
@@ -276,8 +281,7 @@ function renderPrologue() {
   document.querySelector("#legend-title").textContent = legend.title || "关于“琴”的传说";
   document.querySelector("#legend-note").textContent = legend.note || "这只是流传下来的说法。你的调查将从核对它开始。";
   document.querySelector("#enter-map").textContent = legend.action || "记下传说，开始调查";
-  const legendParagraphs = String(legend.body || "关于“琴”的传说已经流传了很久。").split(/\n\s*\n/).filter(Boolean);
-  document.querySelector("#legend-body").innerHTML = legendParagraphs.map((paragraph) => `<p>${paragraph.replace(/\n/g, "<br>")}</p>`).join("");
+  renderLegendPassages();
   const legendArt = document.querySelector("#legend-art");
   const legendArtwork = String(legend.artwork || "").trim();
   legendArt.classList.toggle("has-image", Boolean(legendArtwork));
@@ -287,9 +291,19 @@ function renderPrologue() {
 
 function openLegend(returnTarget = null) {
   legendReturnTarget = returnTarget;
+  closePanels();
+  sceneLayer.classList.remove("is-open");
+  sceneLayer.setAttribute("aria-hidden", "true");
   const action = document.querySelector("#enter-map");
   action.textContent = returnTarget ? "返回传闻勘误" : (CONTENT.legend?.action || "记下传说，开始调查");
+  renderLegendPassages();
   showScreen("legend-screen");
+}
+
+function openErrataFromLegend() {
+  legendReturnTarget = null;
+  showScreen("map-screen");
+  openPanel("timeline-panel");
 }
 
 function resetMailView() {
@@ -336,11 +350,107 @@ function getTimelineModules() {
   return CONTENT.rumorModules || [];
 }
 
+function getLegendParagraphs() {
+  return String(CONTENT.legend?.body || "").split(/\n\s*\n/).map((item) => item.trim()).filter(Boolean);
+}
+
+function getLegendClaims() {
+  const paragraphs = getLegendParagraphs();
+  return getTimelineModules().map((module, index) => ({
+    module,
+    excerpt: String(module.legendExcerpt || paragraphs[index] || "").trim()
+  })).filter((item) => item.excerpt);
+}
+
+function isLegendJudged(moduleId) {
+  return state.legendJudgments.includes(moduleId);
+}
+
+function areAllLegendClaimsFound() {
+  const modules = getTimelineModules();
+  return modules.length > 0 && modules.every((module) => isLegendJudged(module.id));
+}
+
+function getErrataEvidenceIds() {
+  return [...new Set(getTimelineModules().flatMap((module) => module.evidenceIds || []))];
+}
+
+function areAllErrataEvidenceFound() {
+  const evidenceIds = getErrataEvidenceIds();
+  return getKeyCount() >= Number(CONTENT.keyClueGoal || 0) && evidenceIds.every((id) => state.foundClues.includes(id));
+}
+
+function isErrataReady() {
+  return areAllLegendClaimsFound() && areAllErrataEvidenceFound();
+}
+
+function markLegendClaim(moduleId) {
+  if (isLegendJudged(moduleId)) {
+    showToast("这处疑点已经记入传闻勘误。");
+    return;
+  }
+  const firstJudgment = state.legendJudgments.length === 0;
+  state.legendJudgments.push(moduleId);
+  saveState();
+  playConfirmCue();
+  renderLegendPassages();
+
+  const actionLabel = state.introComplete ? "前往勘误" : "";
+  const actionHandler = state.introComplete ? openErrataFromLegend : null;
+  if (areAllLegendClaimsFound()) {
+    showToast("【传说文本已全部搜索完毕】所有可疑之处均已记入传闻勘误，仍需史料加以验证。", actionLabel, actionHandler);
+  } else if (firstJudgment) {
+    showToast("【传闻勘误已解锁】已将第一处疑点记入调查。", actionLabel, actionHandler);
+  } else {
+    showToast(`【发现一处疑点】传说搜索进度 ${state.legendJudgments.length} / ${getTimelineModules().length}`);
+  }
+}
+
+function renderLegendPassages() {
+  const body = document.querySelector("#legend-body");
+  const status = document.querySelector("#legend-search-status");
+  if (!body || !status) return;
+  const paragraphs = getLegendParagraphs();
+  const claims = getLegendClaims();
+  body.innerHTML = "";
+
+  paragraphs.forEach((paragraph) => {
+    const element = document.createElement("p");
+    const matches = claims.map((claim) => ({
+      ...claim,
+      start: paragraph.indexOf(claim.excerpt)
+    })).filter((claim) => claim.start >= 0).sort((a, b) => a.start - b.start || b.excerpt.length - a.excerpt.length);
+    let cursor = 0;
+    matches.forEach((claim) => {
+      if (claim.start < cursor) return;
+      element.append(document.createTextNode(paragraph.slice(cursor, claim.start)));
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "legend-claim";
+      button.classList.toggle("is-judged", isLegendJudged(claim.module.id));
+      button.setAttribute("aria-pressed", String(isLegendJudged(claim.module.id)));
+      button.title = isLegendJudged(claim.module.id) ? "已记为疑点" : "点击判断这句话";
+      button.textContent = claim.excerpt;
+      button.addEventListener("click", () => markLegendClaim(claim.module.id));
+      element.appendChild(button);
+      cursor = claim.start + claim.excerpt.length;
+    });
+    element.append(document.createTextNode(paragraph.slice(cursor)));
+    body.appendChild(element);
+  });
+
+  const foundCount = getTimelineModules().filter((module) => isLegendJudged(module.id)).length;
+  const total = getTimelineModules().length;
+  status.textContent = areAllLegendClaimsFound()
+    ? `传说文本已全部搜索完毕 · ${foundCount} / ${total}`
+    : `已标记疑点 ${foundCount} / ${total}`;
+}
+
 function getComicPages() {
   return CONTENT.comics?.pages || [];
 }
 
-function isModuleUnlocked(module) { return getKeyCount() >= (module.requiredKeyClues || 0); }
+function isModuleUnlocked() { return isErrataReady(); }
 function isModuleSolved(moduleId) { return state.correctedRumorModules.includes(moduleId); }
 function areAllModulesSolved() { return getTimelineModules().every((module) => isModuleSolved(module.id)); }
 
@@ -476,6 +586,11 @@ function updateProgressUI() {
   settingsSound.checked = state.sound;
   settingsMotion.checked = state.reduceMotion;
   document.body.classList.toggle("reduce-motion", state.reduceMotion);
+  const timelineButton = document.querySelector("#timeline-nav-button");
+  const timelineDeskItem = document.querySelector("#timeline-desk-item");
+  const errataUnlocked = state.legendJudgments.length > 0 || state.correctedRumorModules.length > 0;
+  timelineButton.classList.toggle("is-hidden", !errataUnlocked);
+  timelineDeskItem.classList.toggle("is-hidden", !errataUnlocked);
   const dreamButton = document.querySelector('[data-view="dream"]');
   const dreamDeskItem = document.querySelector("#dream-desk-item");
   const comicButton = document.querySelector('[data-view="comics"]');
@@ -597,7 +712,12 @@ function discoverClue(clue, button) {
     window.setTimeout(() => showToast("【梦境有新变化】现实中的发现，似乎在梦里留下了回响。", "前往梦境", () => openPanel("dream-panel")), 520);
   }
   if (isNew && currentKeyCount >= CONTENT.keyClueGoal) {
-    window.setTimeout(() => showToast("关键记录已齐全，可以开始更正流传的说法。", "前往勘误", () => openPanel("timeline-panel")), state.dreamVisited ? 1750 : 900);
+    const ready = isErrataReady();
+    window.setTimeout(() => showToast(
+      ready ? "【传闻勘误条件已满足】传说疑点与关键记录均已齐全。" : "【关键记录已齐全】还需回到传说页找出全部可疑之处。",
+      ready ? "前往勘误" : "重读传说",
+      ready ? () => openPanel("timeline-panel") : () => openLegend("timeline-panel")
+    ), state.dreamVisited ? 1750 : 900);
   }
   if (isNew) {
     const newComicPages = syncComicUnlocks();
@@ -735,6 +855,18 @@ function renderTimeline() {
   const rumor = document.querySelector("#rumor-statement");
   const result = document.querySelector("#correction-result");
   const modules = getTimelineModules();
+  const judgmentCount = modules.filter((module) => isLegendJudged(module.id)).length;
+  const evidenceIds = getErrataEvidenceIds();
+  const evidenceCount = evidenceIds.filter((id) => state.foundClues.includes(id)).length;
+  const readyForErrata = isErrataReady();
+  document.querySelector("#errata-judgment-progress").textContent = `${judgmentCount} / ${modules.length}`;
+  document.querySelector("#errata-evidence-progress").textContent = `${evidenceCount} / ${evidenceIds.length}`;
+  document.querySelector("#errata-readiness").classList.toggle("is-ready", readyForErrata);
+  document.querySelector("#errata-readiness-note").textContent = readyForErrata
+    ? "准备工作已经完成。现在可以逐条选择证据并提交勘误。"
+    : !areAllLegendClaimsFound()
+      ? "先在传说正文中找出全部可疑字句。"
+      : "疑点已经找齐，继续收集能够反驳它们的关键记录。";
   if (!activeTimelineModuleId || !modules.some((module) => module.id === activeTimelineModuleId)) {
     activeTimelineModuleId = modules.find((module) => isModuleUnlocked(module) && !isModuleSolved(module.id))?.id || modules[0]?.id;
     selectedEvidenceIds = new Set();
@@ -748,9 +880,13 @@ function renderTimeline() {
     button.classList.toggle("is-current", module.id === activeTimelineModuleId);
     button.classList.toggle("is-solved", isModuleSolved(module.id));
     button.classList.toggle("is-locked", !unlocked);
-    button.innerHTML = `<b>${module.title}</b><small>${unlocked ? (isModuleSolved(module.id) ? "更正已经归档" : "等待核对证据") : `需要 ${module.requiredKeyClues} 条关键线索`}</small>`;
+    button.innerHTML = `<b>${module.title}</b><small>${unlocked ? (isModuleSolved(module.id) ? "更正已经归档" : "等待核对证据") : (!areAllLegendClaimsFound() ? "传说疑点尚未找齐" : "关键记录尚未收齐")}</small>`;
     button.addEventListener("click", () => {
-      if (!unlocked) { showToast("这个小节所需的记录还没有收集齐。 "); return; }
+      if (!unlocked) {
+        if (!areAllLegendClaimsFound()) showToast("先在传说正文中找出全部可疑字句。", "重读传说", () => openLegend("timeline-panel"));
+        else showToast("关键记录还没有收集齐，暂时无法开始勘误。");
+        return;
+      }
       activeTimelineModuleId = module.id;
       selectedEvidenceIds = new Set();
       renderTimeline();
@@ -763,7 +899,13 @@ function renderTimeline() {
   const solved = isModuleSolved(activeModule.id);
   rumor.textContent = activeModule.rumor;
   rumor.classList.toggle("is-corrected", solved);
-  intro.textContent = solved ? "这条传闻已经完成勘误。可以继续核对其他说法。" : ready ? "从已经收集的记录中，选出真正能够反驳这条传闻的证据。" : `还需要 ${Math.max(0, activeModule.requiredKeyClues - getKeyCount())} 条关键线索才能核对这条传闻。`;
+  intro.textContent = solved
+    ? "这条传闻已经完成勘误。可以继续核对其他说法。"
+    : ready
+      ? "从已经收集的记录中，选出真正能够反驳这条传闻的证据。"
+      : !areAllLegendClaimsFound()
+        ? "传说正文仍有尚未找出的疑点。"
+        : "关键记录尚未收集齐，暂时不能提交勘误。";
   result.hidden = !solved;
   result.innerHTML = solved ? `<span>更正后的结论</span><p>${activeModule.correction}</p>` : "";
   container.innerHTML = "";
@@ -1080,6 +1222,9 @@ document.querySelector("#open-mail").addEventListener("click", () => {
 document.querySelector("#open-legend").addEventListener("click", () => {
   openLegend(null);
 });
+document.querySelector("#header-open-legend").addEventListener("click", () => {
+  openLegend("map-screen");
+});
 document.querySelector("#open-publication-legend").addEventListener("click", () => {
   openLegend("timeline-panel");
 });
@@ -1114,7 +1259,7 @@ document.querySelector("#enter-map").addEventListener("click", () => {
     const target = legendReturnTarget;
     legendReturnTarget = null;
     showScreen("map-screen");
-    openPanel(target);
+    if (target !== "map-screen") openPanel(target);
     return;
   }
   state.introComplete = true;
@@ -1184,8 +1329,12 @@ document.querySelector("#timeline-submit").addEventListener("click", submitTimel
 document.querySelector("#timeline-hint").addEventListener("click", () => {
   const activeModule = getTimelineModules().find((module) => module.id === activeTimelineModuleId);
   if (!activeModule) return;
+  if (!areAllLegendClaimsFound()) {
+    showToast("传说正文中还有尚未找出的疑点。", "重读传说", () => openLegend("timeline-panel"));
+    return;
+  }
   const missing = (activeModule.evidenceIds || []).filter((id) => !state.foundClues.includes(id)).length;
-  showToast(missing ? `还缺少 ${missing} 条能够直接反驳这条传闻的记录。` : "对照传闻中的绝对说法，寻找能证明“并非一直如此”的记录。 ");
+  showToast(missing ? `还缺少 ${missing} 条能够直接反驳这条传闻的记录。` : "对照传闻中的绝对说法，寻找能证明“并非一直如此”的记录。");
 });
 document.querySelector("#light-switch").addEventListener("click", () => {
   state.dreamForm = state.dreamForm === "black" ? "white" : "black";
