@@ -329,27 +329,28 @@ button:focus-visible {
   padding:1px 1px;
   border:0;
   color:inherit;
-  background-color:transparent;
-  background-image:
-    linear-gradient(177deg,transparent 0 34%,rgba(113,66,59,.84) 38% 57%,transparent 61%),
-    linear-gradient(184deg,transparent 0 38%,rgba(113,66,59,.34) 42% 58%,transparent 62%);
-  background-repeat:no-repeat;
-  background-position:left calc(100% - 1px),left 100%;
-  background-size:0 4px,0 2px;
+  background:transparent;
   font:inherit;
   line-height:inherit;
   text-align:left;
-  box-decoration-break:clone;
-  -webkit-box-decoration-break:clone;
 }
-.legend-claim:hover { color:inherit; background-color:transparent; }
+.legend-claim:hover { color:inherit; background:transparent; }
 .legend-claim:focus-visible { outline:1px dotted rgba(113,66,59,.7); outline-offset:3px; }
-.legend-claim.is-judged {
-  color:#6f4d47;
-  background-size:100% 4px,100% 2px;
+.legend-ink-char {
+  display:inline-block;
+  padding-bottom:1px;
+  background-image:
+    linear-gradient(177deg,transparent 0 32%,rgba(113,66,59,.86) 37% 57%,transparent 63%),
+    linear-gradient(183deg,transparent 0 39%,rgba(113,66,59,.32) 43% 58%,transparent 64%);
+  background-repeat:no-repeat;
+  background-position:left calc(100% - 1px),left 100%;
+  background-size:0 4px,0 2px;
 }
-.legend-claim.is-inking {
-  animation:legend-ink-stroke .46s cubic-bezier(.2,.72,.2,1) both;
+.legend-claim.is-judged { color:#6f4d47; }
+.legend-claim.is-judged .legend-ink-char { background-size:100% 4px,100% 2px; }
+.legend-claim.is-inking .legend-ink-char {
+  animation:legend-character-ink .22s cubic-bezier(.2,.7,.22,1) both;
+  animation-delay:calc(var(--ink-order) * 18ms);
 }
 .legend-claim.is-judged::after {
   content:" 待核";
@@ -374,9 +375,10 @@ button:focus-visible {
 .quill-cursor { transition:transform .12s ease; }
 .quill-cursor.is-poised { transform:translate(-34px,-66px) rotate(35deg) scale(.94); }
 
-@keyframes legend-ink-stroke {
-  from { background-size:0 4px,0 2px; }
-  to { background-size:100% 4px,100% 2px; }
+@keyframes legend-character-ink {
+  0% { background-size:0 4px,0 2px; transform:translateY(0); }
+  45% { transform:translateY(.25px); }
+  100% { background-size:100% 4px,100% 2px; transform:translateY(0); }
 }
 @keyframes legend-miss-ink {
   0% { opacity:0; transform:rotate(-2deg) scaleX(0); }
