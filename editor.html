@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex,nofollow" />
     <title>《琴》内容编辑页</title>
-    <link rel="stylesheet" href="editor.css?v=image-protector-4" />
+    <link rel="stylesheet" href="editor.css?v=image-protector-5" />
   </head>
   <body>
     <header class="editor-header">
@@ -80,7 +80,7 @@
               </div>
               <label>角落水印文字<input id="protector-text" type="text" value="© 《琴》· 仅供阅览" /></label>
               <label>角落文字透明度 <span id="protector-opacity-value">20%</span><input id="protector-opacity" type="range" min="8" max="32" value="20" step="1" /></label>
-              <label>满屏斜杠强度 <span id="protector-slash-value">7%</span><input id="protector-slash" type="range" min="2" max="14" value="7" step="1" /><small>细斜杠会均匀铺满整张图片，形成轻薄的保护涂层。</small></label>
+              <label>满屏斜纹不透明度 <span id="protector-slash-value">5%</span><input id="protector-slash" type="range" min="1" max="10" value="5" step="1" /><small>默认采用已确认的中等密度、约 45° 灰色网纹；只需很浅一层即可。</small></label>
               <label class="protector-toggle"><input id="protector-safe-enabled" type="checkbox" checked /><span>启用圆形水印避让区</span></label>
               <label>避让区大小 <span id="protector-safe-size-value">25%</span><input id="protector-safe-size" type="range" min="10" max="45" value="25" step="1" /><small>拖动预览图中的圆圈，放到人物脸部或重要细节上。</small></label>
               <label>全图细颗粒强度 <span id="protector-texture-value">5%</span><input id="protector-texture" type="range" min="0" max="10" value="5" step="1" /><small>细颗粒会轻微调整全图像素，不随避让区消失，也不会写入原文件。</small></label>
@@ -152,6 +152,6 @@
 
     <div class="save-indicator" id="save-indicator">已保存在本机</div>
     <script src="content.js"></script>
-    <script src="editor.js?v=image-protector-4"></script>
+    <script src="editor.js?v=image-protector-5"></script>
   </body>
 </html>
