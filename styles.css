@@ -244,8 +244,8 @@ button:focus-visible {
 
 .legend-page {
   display: grid;
-  grid-template-columns: minmax(280px, .86fr) minmax(360px, 1.14fr);
-  width: min(1080px, 95vw);
+  grid-template-columns: minmax(420px, 1.08fr) minmax(420px, .92fr);
+  width: min(1320px, 97vw);
   max-height: calc(100dvh - 48px);
   overflow: auto;
   color: #292720;
@@ -261,9 +261,10 @@ button:focus-visible {
   background:
     linear-gradient(rgba(23, 19, 17, .12), rgba(23, 19, 17, .48)),
     radial-gradient(circle at 50% 38%, #75695c, #2a2722 72%);
+  background-color: #201e1a;
   background-position: center;
   background-repeat: no-repeat;
-  background-size: cover;
+  background-size: contain;
 }
 
 .legend-art::after {
@@ -911,7 +912,7 @@ button:focus-visible {
 .clue-card h3 { margin: 9px 0 16px; font-size: 22px; font-weight: 400; }
 .clue-card > p:last-of-type { font-size: 13px; line-height: 1.85; }
 .clue-image-placeholder { display: grid; place-items: center; aspect-ratio: 16/9; color: #847a64; background: #c8bda3; font-size: 11px; letter-spacing: .16em; }
-.clue-image-placeholder.has-image { background-position:center; background-repeat:no-repeat; background-size:cover; }
+.clue-image-placeholder.has-image { background-position:center; background-repeat:no-repeat; background-size:contain; }
 
 /* Desk, notebook, timeline and settings */
 .panel-layer { overflow: auto; padding: clamp(18px, 5vw, 70px); color: #24231e; background: rgba(13,13,11,.96); }
@@ -953,7 +954,7 @@ button:focus-visible {
 .clue-detail-body p { margin:0 0 1.4em; }
 
 .rumor-publication { display:grid; grid-template-columns:minmax(220px,320px) 1fr; gap:30px; align-items:center; margin:30px 0 38px; padding:22px; border:1px solid rgba(63,52,40,.22); background:rgba(255,255,255,.12); }
-.publication-visual { position:relative; display:grid; place-items:center; width:100%; aspect-ratio:4/3; overflow:hidden; border:1px solid rgba(64,51,39,.32); color:#776c58; background-color:#bdb39a; background-position:center; background-repeat:no-repeat; background-size:cover; font-family:inherit; }
+.publication-visual { position:relative; display:grid; place-items:center; width:100%; aspect-ratio:4/3; overflow:hidden; border:1px solid rgba(64,51,39,.32); color:#776c58; background-color:#bdb39a; background-position:center; background-repeat:no-repeat; background-size:contain; font-family:inherit; }
 .publication-visual:not(:disabled) { cursor:pointer; }
 .publication-visual:not(:disabled):hover { border-color:#77504a; box-shadow:0 12px 28px rgba(45,35,24,.18); transform:translateY(-1px); }
 .publication-placeholder { font-size:12px; letter-spacing:.18em; }
@@ -1043,7 +1044,7 @@ button:focus-visible {
 .dream-scene.is-black { color: #eee8da; background: #090909; }
 .dream-scene.is-white { color: #24231e; background: #eee9dc; }
 .dream-close { position: absolute; z-index: 8; top: 24px; left: 28px; color: inherit; }
-.dream-figure { position: absolute; top: 12%; left: 50%; display: grid; place-content: center; gap: 8px; width: min(52vw, 540px); height: 78%; text-align: center; border: 1px solid currentColor; opacity: .74; transform: translateX(-50%); }
+.dream-figure { position: absolute; top: 12%; left: 50%; display: grid; place-content: center; gap: 8px; width: min(84vw, 1200px); height: 78%; text-align: center; border: 1px solid currentColor; opacity: .74; transform: translateX(-50%); }
 .dream-figure { background-position:center; background-repeat:no-repeat; background-size:contain; }
 .dream-figure.has-image { border-color:transparent; opacity:1; }
 .dream-figure.has-image span,.dream-figure.has-image b { display:none; }
@@ -1101,7 +1102,7 @@ button:focus-visible {
 .history-page article { position: relative; max-width: 760px; margin: 50px auto; }
 .history-block { display: grid; grid-template-columns: minmax(180px, .8fr) 1.2fr; gap: 34px; align-items: center; margin: 44px 0; }
 .history-block:nth-child(even) .history-image { order: 2; }
-.history-image { display: grid; place-items: center; aspect-ratio: 4/3; color: #8c816a; background-color: #c5b99c; background-size: cover; background-position: center; font-size: 11px; }
+.history-image { display: grid; place-items: center; aspect-ratio: 4/3; color: #8c816a; background-color: #c5b99c; background-size: contain; background-position: center; background-repeat: no-repeat; font-size: 11px; }
 .history-copy h3 { font-size: 22px; font-weight: 400; }
 .history-copy p { color: #655d4d; line-height: 1.9; }
 .history-page > .primary-button { display: block; margin: 30px auto; }
