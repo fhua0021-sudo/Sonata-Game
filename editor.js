@@ -563,7 +563,9 @@ protectorDownload?.addEventListener("click", () => {
 function decorateArtworkInputs() {
   const selector = [
     '[data-path$=".artwork"]',
+    '[data-path$="Artwork"]',
     '[data-path="map.artwork"]',
+    '[data-scene-field="artwork"]',
     '[data-field="artwork"]',
     '[data-comic-field="artwork"]',
     '#dream-artwork-path'
