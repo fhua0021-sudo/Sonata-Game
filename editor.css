@@ -108,3 +108,25 @@ summary { cursor:pointer; }
   .hotspot-row,.timeline-edit-row,.history-edit-row,.evidence-picker { grid-template-columns:1fr; }
   .comic-editor-card { padding:14px; }
 }
+
+/* Local image protector */
+.protector-privacy { margin:0 0 24px; padding:18px 20px; border-left:3px solid #55766f; background:rgba(240,234,217,.62); }
+.protector-privacy b { color:#3e5f58; font-weight:600; }
+.protector-privacy p { margin:8px 0 0; color:#625b4c; font-size:13px; line-height:1.8; }
+.protector-layout { display:grid; grid-template-columns:minmax(260px,360px) 1fr; gap:26px; align-items:start; }
+.protector-controls { display:grid; gap:18px; padding:22px; border:1px solid var(--line); background:rgba(240,234,217,.54); }
+.protector-controls label > span { justify-self:end; color:#76524a; font-size:11px; }
+.protector-controls input[type="range"] { padding:0; accent-color:#713e3b; }
+.protector-controls small { color:#7b725f; line-height:1.6; }
+.protector-download { padding:12px 16px; border:1px solid #5c5140; color:#f1e8d4; cursor:pointer; background:#39342b; }
+.protector-download:disabled { cursor:default; opacity:.38; }
+.protector-status { margin:0; color:#68604f; font-size:12px; line-height:1.7; }
+.protector-preview { position:relative; display:grid; place-items:center; min-height:430px; overflow:auto; padding:18px; border:1px solid var(--line); background-color:#bcb197; background-image:linear-gradient(45deg,rgba(255,255,255,.12) 25%,transparent 25%),linear-gradient(-45deg,rgba(255,255,255,.12) 25%,transparent 25%),linear-gradient(45deg,transparent 75%,rgba(255,255,255,.12) 75%),linear-gradient(-45deg,transparent 75%,rgba(255,255,255,.12) 75%); background-position:0 0,0 10px,10px -10px,-10px 0; background-size:20px 20px; }
+.protector-preview canvas { display:block; max-width:100%; max-height:70vh; box-shadow:0 12px 34px rgba(48,39,26,.24); }
+#protector-empty { color:#6f6655; font-size:12px; letter-spacing:.08em; }
+.protect-image-shortcut { justify-self:start; padding:5px 0; border:0; border-bottom:1px solid rgba(113,62,59,.34); color:#713e3b; cursor:pointer; background:transparent; font-size:11px; }
+.protect-image-shortcut:hover { border-bottom-color:#713e3b; }
+@media(max-width:760px){
+  .protector-layout { grid-template-columns:1fr; }
+  .protector-preview { min-height:280px; }
+}
