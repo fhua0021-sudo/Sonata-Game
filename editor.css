@@ -141,3 +141,12 @@ summary { cursor:pointer; }
 .protector-safe-zone:active { cursor:grabbing; }
 .protector-safe-zone span { padding:4px 7px; border-radius:12px; background:rgba(27,23,19,.62); font-size:10px; line-height:1.2; white-space:nowrap; }
 .protector-safe-zone[hidden] { display:none; }
+
+
+/* Fine-grain protector and local-file clear control */
+.protector-file-row { display:grid; grid-template-columns:minmax(0,1fr) 38px; gap:10px; align-items:end; }
+.protector-file-label { min-width:0; }
+.protector-clear-file { display:grid; place-items:center; width:38px; height:38px; padding:0; border:1px solid rgba(113,62,59,.44); color:#713e3b; cursor:pointer; background:rgba(255,250,239,.55); font:400 23px/1 Georgia,serif; }
+.protector-clear-file:hover { border-color:#713e3b; background:rgba(255,250,239,.92); }
+.protector-clear-file[hidden],
+.protector-canvas-stage[hidden] { display:none; }
