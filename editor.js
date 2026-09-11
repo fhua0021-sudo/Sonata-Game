@@ -505,29 +505,21 @@ function drawFineGrain(context, width, height, strength) {
 function drawDiagonalHatch(context, width, height, strength) {
   if (strength <= 0) return;
   const shortest = Math.min(width, height);
-  const spacing = Math.max(16, Math.round(shortest * 0.026));
-  const lineWidth = Math.max(1, shortest * 0.00115);
+  const spacing = Math.max(16, shortest * 0.026);
+  const lineWidth = Math.max(2, shortest * 0.0054);
   const first = -height - spacing;
   const last = width + spacing;
 
-  function traceLines() {
-    context.beginPath();
-    for (let x = first; x <= last; x += spacing) {
-      context.moveTo(x, height + spacing);
-      context.lineTo(x + height + spacing * 2, -spacing);
-    }
-    context.stroke();
-  }
-
   context.save();
+  context.beginPath();
+  for (let x = first; x <= last; x += spacing) {
+    context.moveTo(x, height + spacing);
+    context.lineTo(x + height + spacing * 2, -spacing);
+  }
   context.lineWidth = lineWidth;
-  context.globalAlpha = strength;
-  context.strokeStyle = "#302b28";
-  traceLines();
-  context.translate(lineWidth * 1.25, 0);
-  context.globalAlpha = strength * 0.48;
-  context.strokeStyle = "#fffaf0";
-  traceLines();
+  context.globalAlpha = Math.max(0.01, Math.min(0.1, strength));
+  context.strokeStyle = "#5f6268";
+  context.stroke();
   context.restore();
 }
 
@@ -584,7 +576,7 @@ function drawProtectedImage() {
   const overlayContext = overlay.getContext("2d");
   const label = protectorText.value.trim() || "© 《琴》· 仅供阅览";
   const opacity = Math.max(0.08, Math.min(0.32, Number(protectorOpacity.value) / 100));
-  const slashStrength = Math.max(0.02, Math.min(0.14, Number(protectorSlash.value) / 100));
+  const slashStrength = Math.max(0.01, Math.min(0.1, Number(protectorSlash.value) / 100));
   drawDiagonalHatch(overlayContext, width, height, slashStrength);
   drawCornerWatermark(overlayContext, width, height, label, opacity);
 
@@ -614,7 +606,7 @@ function drawProtectedImage() {
   protectorSlashValue.textContent = `${Math.round(slashStrength * 100)}%`;
   protectorTextureValue.textContent = `${Math.round(textureStrength * 100)}%`;
   updateSafeZoneGuide(width, height);
-  protectorStatus.textContent = `副本尺寸：${width} × ${height}。全图为细颗粒与斜杠涂层，文字水印位于右下角。`;
+  protectorStatus.textContent = `副本尺寸：${width} × ${height}。全图为细颗粒与浅灰斜纹，文字水印位于右下角。`;
 }
 
 function openProtectorSection() {
