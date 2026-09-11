@@ -452,8 +452,17 @@ const protectorFile = document.querySelector("#protector-file");
 const protectorText = document.querySelector("#protector-text");
 const protectorOpacity = document.querySelector("#protector-opacity");
 const protectorOpacityValue = document.querySelector("#protector-opacity-value");
+const protectorBlur = document.querySelector("#protector-blur");
+const protectorBlurValue = document.querySelector("#protector-blur-value");
+const protectorSafeEnabled = document.querySelector("#protector-safe-enabled");
+const protectorSafeSize = document.querySelector("#protector-safe-size");
+const protectorSafeSizeValue = document.querySelector("#protector-safe-size-value");
+const protectorTexture = document.querySelector("#protector-texture");
+const protectorTextureValue = document.querySelector("#protector-texture-value");
 const protectorMaxEdge = document.querySelector("#protector-max-edge");
 const protectorCanvas = document.querySelector("#protector-canvas");
+const protectorCanvasStage = document.querySelector("#protector-canvas-stage");
+const protectorSafeZone = document.querySelector("#protector-safe-zone");
 const protectorDownload = document.querySelector("#protector-download");
 const protectorStatus = document.querySelector("#protector-status");
 const protectorEmpty = document.querySelector("#protector-empty");
@@ -461,10 +470,53 @@ const protectorContext = protectorCanvas?.getContext("2d");
 let protectorImage = null;
 let protectorObjectUrl = "";
 let protectorSourceName = "";
+let protectorSafeDrag = false;
+const protectorSafeArea = { x: 0.5, y: 0.34, size: 0.25 };
 
 function protectedFilename(filename) {
   const base = String(filename || "image").replace(/\.[^.]+$/, "").replace(/[\\/:*?"<>|]+/g, "-").trim() || "image";
   return `${base}-watermarked.webp`;
+}
+
+function seededRandomFactory() {
+  let seed = 0x51f15e;
+  return () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+}
+
+function drawPaperTexture(context, width, height, strength) {
+  if (strength <= 0) return;
+  const random = seededRandomFactory();
+  const amount = Math.min(4200, Math.max(500, Math.round((width * height) / 1500)));
+  context.save();
+  context.globalCompositeOperation = "soft-light";
+  context.lineWidth = Math.max(0.45, Math.min(width, height) / 2400);
+  for (let index = 0; index < amount; index += 1) {
+    const x = random() * width;
+    const y = random() * height;
+    const length = 2 + random() * Math.max(3, Math.min(width, height) * 0.009);
+    const light = index % 3 === 0;
+    context.globalAlpha = strength * (0.16 + random() * 0.34);
+    context.strokeStyle = light ? "#fff7e8" : "#55483c";
+    context.beginPath();
+    context.moveTo(x, y);
+    context.quadraticCurveTo(x + length * 0.48, y + (random() - 0.5) * 1.6, x + length, y + (random() - 0.5) * 2.2);
+    context.stroke();
+  }
+  context.restore();
+}
+
+function updateSafeZoneGuide(width = protectorCanvas.width, height = protectorCanvas.height) {
+  const enabled = Boolean(protectorSafeEnabled?.checked && protectorImage);
+  protectorSafeZone.hidden = !enabled;
+  protectorSafeSizeValue.textContent = `${Math.round(protectorSafeArea.size * 100)}%`;
+  if (!enabled || !width || !height) return;
+  const diameterPercent = (protectorSafeArea.size * Math.min(width, height) / width) * 100;
+  protectorSafeZone.style.left = `${protectorSafeArea.x * 100}%`;
+  protectorSafeZone.style.top = `${protectorSafeArea.y * 100}%`;
+  protectorSafeZone.style.width = `${diameterPercent}%`;
 }
 
 function drawProtectedImage() {
@@ -475,42 +527,80 @@ function drawProtectedImage() {
   const height = Math.max(1, Math.round(protectorImage.naturalHeight * scale));
   protectorCanvas.width = width;
   protectorCanvas.height = height;
+  protectorCanvasStage.style.aspectRatio = `${width} / ${height}`;
   protectorContext.clearRect(0, 0, width, height);
   protectorContext.drawImage(protectorImage, 0, 0, width, height);
 
+  const overlay = document.createElement("canvas");
+  overlay.width = width;
+  overlay.height = height;
+  const overlayContext = overlay.getContext("2d");
   const label = protectorText.value.trim() || "© 仅供阅览";
+  const designedLabel = `— ♪  ${label}  ♪ —`;
   const opacity = Math.max(0.08, Math.min(0.28, Number(protectorOpacity.value) / 100));
-  const fontSize = Math.max(20, Math.round(Math.min(width, height) * 0.035));
+  const blurLevel = Math.max(0, Math.min(8, Number(protectorBlur.value) || 0));
+  const fontSize = Math.max(20, Math.round(Math.min(width, height) * 0.032));
   const diagonal = Math.ceil(Math.hypot(width, height));
-  protectorContext.save();
-  protectorContext.translate(width / 2, height / 2);
-  protectorContext.rotate(-Math.PI / 7);
-  protectorContext.font = `600 ${fontSize}px "Songti SC","Noto Serif SC",serif`;
-  protectorContext.textAlign = "center";
-  protectorContext.textBaseline = "middle";
-  protectorContext.lineWidth = Math.max(1, fontSize * 0.045);
-  const measured = protectorContext.measureText(label).width;
-  const stepX = Math.max(measured + fontSize * 3.8, width * 0.34);
-  const stepY = Math.max(fontSize * 4.6, height * 0.16);
+  overlayContext.translate(width / 2, height / 2);
+  overlayContext.rotate(-Math.PI / 7);
+  overlayContext.font = `500 ${fontSize}px "Songti SC","Noto Serif SC",serif`;
+  overlayContext.textAlign = "center";
+  overlayContext.textBaseline = "middle";
+  overlayContext.lineWidth = Math.max(1, fontSize * 0.04);
+  const measured = overlayContext.measureText(designedLabel).width;
+  const stepX = Math.max(measured + fontSize * 3.5, width * 0.38);
+  const stepY = Math.max(fontSize * 5.2, height * 0.18);
   let row = 0;
   for (let y = -diagonal; y <= diagonal; y += stepY) {
     const shift = row % 2 ? stepX / 2 : 0;
     for (let x = -diagonal - shift; x <= diagonal; x += stepX) {
-      protectorContext.globalAlpha = opacity * 0.72;
-      protectorContext.strokeStyle = "#171713";
-      protectorContext.strokeText(label, x, y);
-      protectorContext.globalAlpha = opacity;
-      protectorContext.fillStyle = "#fffaf0";
-      protectorContext.fillText(label, x, y);
+      if (blurLevel > 0) {
+        overlayContext.save();
+        overlayContext.filter = `blur(${Math.max(1, fontSize * blurLevel * 0.018)}px)`;
+        overlayContext.globalAlpha = opacity * 0.42;
+        overlayContext.fillStyle = "#fff8e8";
+        overlayContext.fillText(designedLabel, x + fontSize * 0.08, y + fontSize * 0.06);
+        overlayContext.globalAlpha = opacity * 0.28;
+        overlayContext.fillStyle = "#2f2924";
+        overlayContext.fillText(designedLabel, x - fontSize * 0.07, y - fontSize * 0.04);
+        overlayContext.restore();
+      }
+      overlayContext.globalAlpha = opacity * 0.66;
+      overlayContext.strokeStyle = "#312a25";
+      overlayContext.strokeText(designedLabel, x, y);
+      overlayContext.globalAlpha = opacity;
+      overlayContext.fillStyle = "#fff9ec";
+      overlayContext.fillText(designedLabel, x, y);
     }
     row += 1;
   }
-  protectorContext.restore();
+
+  if (protectorSafeEnabled.checked) {
+    overlayContext.setTransform(1, 0, 0, 1, 0, 0);
+    overlayContext.globalCompositeOperation = "destination-out";
+    const centerX = protectorSafeArea.x * width;
+    const centerY = protectorSafeArea.y * height;
+    const radius = protectorSafeArea.size * Math.min(width, height) / 2;
+    const fade = Math.max(5, radius * 0.12);
+    const clearing = overlayContext.createRadialGradient(centerX, centerY, Math.max(0, radius - fade), centerX, centerY, radius + fade);
+    clearing.addColorStop(0, "rgba(0,0,0,1)");
+    clearing.addColorStop(0.72, "rgba(0,0,0,1)");
+    clearing.addColorStop(1, "rgba(0,0,0,0)");
+    overlayContext.fillStyle = clearing;
+    overlayContext.fillRect(centerX - radius - fade, centerY - radius - fade, (radius + fade) * 2, (radius + fade) * 2);
+  }
+
+  protectorContext.drawImage(overlay, 0, 0);
+  const textureStrength = Math.max(0, Math.min(0.08, Number(protectorTexture.value) / 100));
+  drawPaperTexture(protectorContext, width, height, textureStrength);
 
   protectorEmpty.hidden = true;
   protectorDownload.disabled = false;
   protectorOpacityValue.textContent = `${Math.round(opacity * 100)}%`;
-  protectorStatus.textContent = `副本尺寸：${width} × ${height}。原图仍只保留在当前浏览器内存中。`;
+  protectorBlurValue.textContent = String(blurLevel);
+  protectorTextureValue.textContent = `${Math.round(textureStrength * 100)}%`;
+  updateSafeZoneGuide(width, height);
+  protectorStatus.textContent = `副本尺寸：${width} × ${height}。圆圈内避开文字水印，全图保留极淡纸纹。`;
 }
 
 function openProtectorSection() {
@@ -540,7 +630,38 @@ protectorFile?.addEventListener("change", () => {
   image.src = protectorObjectUrl;
 });
 
-[protectorText, protectorOpacity, protectorMaxEdge].forEach((input) => input?.addEventListener("input", drawProtectedImage));
+[protectorText, protectorOpacity, protectorBlur, protectorSafeSize, protectorTexture, protectorMaxEdge].forEach((input) => input?.addEventListener("input", () => {
+  if (input === protectorSafeSize) protectorSafeArea.size = Number(protectorSafeSize.value) / 100;
+  drawProtectedImage();
+}));
+protectorSafeEnabled?.addEventListener("change", drawProtectedImage);
+
+function moveSafeArea(event) {
+  if (!protectorImage) return;
+  const rect = protectorCanvasStage.getBoundingClientRect();
+  protectorSafeArea.x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+  protectorSafeArea.y = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
+  updateSafeZoneGuide();
+}
+
+protectorSafeZone?.addEventListener("pointerdown", (event) => {
+  protectorSafeDrag = true;
+  protectorSafeZone.setPointerCapture(event.pointerId);
+  moveSafeArea(event);
+});
+protectorSafeZone?.addEventListener("pointermove", (event) => {
+  if (protectorSafeDrag) moveSafeArea(event);
+});
+protectorSafeZone?.addEventListener("pointerup", (event) => {
+  protectorSafeDrag = false;
+  protectorSafeZone.releasePointerCapture(event.pointerId);
+  drawProtectedImage();
+});
+protectorCanvasStage?.addEventListener("click", (event) => {
+  if (!protectorImage || event.target === protectorSafeZone || event.target.closest("#protector-safe-zone")) return;
+  moveSafeArea(event);
+  drawProtectedImage();
+});
 
 protectorDownload?.addEventListener("click", () => {
   if (!protectorImage) return;
