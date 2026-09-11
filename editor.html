@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex,nofollow" />
     <title>《琴》内容编辑页</title>
-    <link rel="stylesheet" href="editor.css?v=image-protector-1" />
+    <link rel="stylesheet" href="editor.css?v=image-protector-3" />
   </head>
   <body>
     <header class="editor-header">
@@ -76,13 +76,20 @@
             <div class="protector-controls">
               <label>选择本地原图<input id="protector-file" type="file" accept="image/png,image/jpeg,image/webp" /></label>
               <label>重复水印文字<input id="protector-text" type="text" value="© 《琴》· 仅供阅览" /></label>
-              <label>水印透明度 <span id="protector-opacity-value">16%</span><input id="protector-opacity" type="range" min="8" max="28" value="16" step="1" /></label>
+              <label>水印透明度 <span id="protector-opacity-value">18%</span><input id="protector-opacity" type="range" min="8" max="28" value="18" step="1" /></label>
+              <label>柔焦墨晕 <span id="protector-blur-value">3</span><input id="protector-blur" type="range" min="0" max="8" value="3" step="1" /><small>只柔化水印外围，主文字仍会保持清楚。</small></label>
+              <label class="protector-toggle"><input id="protector-safe-enabled" type="checkbox" checked /><span>启用圆形水印避让区</span></label>
+              <label>避让区大小 <span id="protector-safe-size-value">25%</span><input id="protector-safe-size" type="range" min="10" max="45" value="25" step="1" /><small>拖动预览图中的圆圈，放到人物脸部或重要细节上。</small></label>
+              <label>全图纸纹强度 <span id="protector-texture-value">3%</span><input id="protector-texture" type="range" min="0" max="8" value="3" step="1" /><small>纸纹覆盖整张图片，强度很轻，不随避让区消失。</small></label>
               <label>输出图片最长边<input id="protector-max-edge" type="number" min="800" max="2400" step="100" value="1800" /><small>建议保持 1800 像素，足够网页阅读，也不会保留过高分辨率。</small></label>
               <button class="protector-download" id="protector-download" type="button" disabled>下载带水印副本</button>
               <p class="protector-status" id="protector-status">请选择一张本地原图开始处理。</p>
             </div>
-            <div class="protector-preview">
-              <canvas id="protector-canvas" aria-label="带水印图片预览"></canvas>
+            <div class="protector-preview" id="protector-preview">
+              <div class="protector-canvas-stage" id="protector-canvas-stage">
+                <canvas id="protector-canvas" aria-label="带水印图片预览"></canvas>
+                <button class="protector-safe-zone" id="protector-safe-zone" type="button" aria-label="拖动水印避让区"><span>拖动避让区</span></button>
+              </div>
               <div id="protector-empty">带水印副本将在这里预览</div>
             </div>
           </div>
@@ -142,6 +149,6 @@
 
     <div class="save-indicator" id="save-indicator">已保存在本机</div>
     <script src="content.js"></script>
-    <script src="editor.js?v=image-protector-2"></script>
+    <script src="editor.js?v=image-protector-3"></script>
   </body>
 </html>
