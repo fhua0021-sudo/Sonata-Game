@@ -13,6 +13,14 @@ const scenePreviewUrls = {};
 const comicPreviewUrls = {};
 let saveTimer = null;
 
+function normalizeArtworkDisplay(value) {
+  return {
+    fit: value?.fit === "cover" ? "cover" : "contain",
+    x: Math.min(100, Math.max(0, Number(value?.x ?? 50))),
+    y: Math.min(100, Math.max(0, Number(value?.y ?? 50)))
+  };
+}
+
 function loadDraft() {
   try {
     const loaded = JSON.parse(localStorage.getItem(DRAFT_KEY)) || clone(window.SONATA_CONTENT);
@@ -23,6 +31,8 @@ function loadDraft() {
     if (loaded.subtitle === "遗失的和弦") loaded.subtitle = defaultContent.subtitle;
     loaded.prologue = { ...clone(window.SONATA_CONTENT.prologue), ...(loaded.prologue || {}) };
     loaded.legend = { ...clone(window.SONATA_CONTENT.legend || {}), ...(loaded.legend || {}) };
+    loaded.legend.artworkDisplay = normalizeArtworkDisplay(loaded.legend.artworkDisplay);
+    loaded.legend.correctedArtworkDisplay = normalizeArtworkDisplay(loaded.legend.correctedArtworkDisplay);
     loaded.map = { ...clone(window.SONATA_CONTENT.map || { artwork: "assets/weilan-mapgen4-187.webp", shroudOpacity: 0.62, defaultRevealRadius: 18 }), ...(loaded.map || {}) };
     if (usesLegacyMap) loaded.map = clone(defaultContent.map);
     loaded.locations = { ...clone(defaultContent.locations || {}), ...(loaded.locations || {}) };
@@ -103,8 +113,114 @@ document.querySelectorAll("[data-path]").forEach((input) => {
   const value = getPath(input.dataset.path);
   if (input.type === "checkbox") input.checked = Boolean(value);
   else input.value = value ?? "";
-  input.addEventListener("input", () => setPath(input.dataset.path, input.type === "checkbox" ? input.checked : input.type === "number" ? Number(input.value) : input.value));
+  input.addEventListener("input", () => {
+    setPath(input.dataset.path, input.type === "checkbox" ? input.checked : input.type === "number" ? Number(input.value) : input.value);
+    if (input.dataset.path === "legend.artwork" || input.dataset.path === "legend.correctedArtwork") renderLegendImageLayouts();
+  });
 });
+
+function renderLegendImageLayouts() {
+  const container = document.querySelector("#legend-image-layout");
+  if (!container) return;
+  const specs = [
+    {
+      artworkField: "artwork",
+      displayField: "artworkDisplay",
+      title: "传说配图",
+      help: "开场传说页已经加宽；这里按传闻勘误页的横向画框预览。"
+    },
+    {
+      artworkField: "correctedArtwork",
+      displayField: "correctedArtworkDisplay",
+      title: "勘误完成后的真相图",
+      help: "真相图在传闻勘误页使用同样的横向画框，点开后仍可完整放大。"
+    }
+  ];
+  container.innerHTML = "";
+  specs.forEach((spec) => {
+    draft.legend[spec.displayField] = normalizeArtworkDisplay(draft.legend[spec.displayField]);
+    const display = draft.legend[spec.displayField];
+    const path = String(draft.legend[spec.artworkField] || "").trim();
+    const card = document.createElement("section");
+    card.className = "image-layout-card";
+    card.innerHTML = `
+      <h4>${escapeHtml(spec.title)}显示方式</h4>
+      <p>${escapeHtml(spec.help)}</p>
+      <div class="image-crop-preview" data-crop-preview>
+        <span class="crop-empty">${path ? "" : "填写上方图片地址后，这里会显示实际画框预览。"}</span>
+        <i class="crop-focus-marker" aria-hidden="true"></i>
+      </div>
+      <div class="image-layout-controls">
+        <label>适配方式
+          <select data-image-fit>
+            <option value="contain" ${display.fit === "contain" ? "selected" : ""}>完整显示（默认，不裁剪）</option>
+            <option value="cover" ${display.fit === "cover" ? "selected" : ""}>填满画框（会裁剪）</option>
+          </select>
+        </label>
+        <div class="image-axis-row">
+          <label>保留位置：左右<input data-image-axis="x" type="range" min="0" max="100" value="${display.x}"></label>
+          <label>保留位置：上下<input data-image-axis="y" type="range" min="0" max="100" value="${display.y}"></label>
+        </div>
+      </div>
+      <p class="image-layout-hint" data-layout-hint></p>
+    `;
+    const preview = card.querySelector("[data-crop-preview]");
+    const marker = card.querySelector(".crop-focus-marker");
+    const fitSelect = card.querySelector("[data-image-fit]");
+    const axisInputs = [...card.querySelectorAll("[data-image-axis]")];
+    const hint = card.querySelector("[data-layout-hint]");
+
+    if (path) preview.style.backgroundImage = `url("${path.replace(/"/g, "%22")}")`;
+
+    const paint = () => {
+      preview.style.backgroundSize = display.fit;
+      preview.style.backgroundPosition = `${display.x}% ${display.y}%`;
+      preview.classList.toggle("is-contain", display.fit === "contain");
+      marker.style.left = `${display.x}%`;
+      marker.style.top = `${display.y}%`;
+      axisInputs.forEach((input) => {
+        input.value = display[input.dataset.imageAxis];
+        input.disabled = display.fit !== "cover";
+      });
+      hint.textContent = display.fit === "contain"
+        ? "当前会保留整张图片，不会裁掉边缘；比例不同时，画框内可能出现少量留空。"
+        : "虚线内就是显示范围。可在画面上点击或拖动十字，决定裁剪时优先保留哪一部分。";
+    };
+
+    const moveFocus = (event) => {
+      if (display.fit !== "cover") return;
+      const rect = preview.getBoundingClientRect();
+      display.x = Math.round(Math.min(100, Math.max(0, ((event.clientX - rect.left) / rect.width) * 100)));
+      display.y = Math.round(Math.min(100, Math.max(0, ((event.clientY - rect.top) / rect.height) * 100)));
+      draft.legend[spec.displayField] = display;
+      paint();
+      saveDraft();
+    };
+
+    preview.addEventListener("pointerdown", (event) => {
+      if (display.fit !== "cover") return;
+      preview.setPointerCapture(event.pointerId);
+      moveFocus(event);
+    });
+    preview.addEventListener("pointermove", (event) => {
+      if (preview.hasPointerCapture(event.pointerId)) moveFocus(event);
+    });
+    fitSelect.addEventListener("change", () => {
+      display.fit = fitSelect.value === "cover" ? "cover" : "contain";
+      draft.legend[spec.displayField] = display;
+      paint();
+      saveDraft();
+    });
+    axisInputs.forEach((input) => input.addEventListener("input", () => {
+      display[input.dataset.imageAxis] = Number(input.value);
+      draft.legend[spec.displayField] = display;
+      paint();
+      saveDraft();
+    }));
+    paint();
+    container.appendChild(card);
+  });
+}
 
 function renderFirstLocationSelect() {
   const select = document.querySelector("#prologue-first-location");
@@ -781,6 +897,7 @@ document.querySelector("#import-file").addEventListener("change", async (event) 
   } catch { alert("这个文件无法识别。请选择此前生成的 content.js 或内容 JSON 文件。"); }
 });
 
+renderLegendImageLayouts();
 renderLocations();
 renderTimelineEditor();
 renderHistoryEditor();
