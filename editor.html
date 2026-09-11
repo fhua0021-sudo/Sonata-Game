@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex,nofollow" />
     <title>《琴》内容编辑页</title>
-    <link rel="stylesheet" href="editor.css?v=image-protector-5" />
+    <link rel="stylesheet" href="editor.css?v=image-protector-6" />
   </head>
   <body>
     <header class="editor-header">
@@ -80,7 +80,10 @@
               </div>
               <label>角落水印文字<input id="protector-text" type="text" value="© 《琴》· 仅供阅览" /></label>
               <label>角落文字透明度 <span id="protector-opacity-value">20%</span><input id="protector-opacity" type="range" min="8" max="32" value="20" step="1" /></label>
-              <label>满屏斜纹不透明度 <span id="protector-slash-value">5%</span><input id="protector-slash" type="range" min="1" max="10" value="5" step="1" /><small>默认采用已确认的中等密度、约 45° 灰色网纹；只需很浅一层即可。</small></label>
+              <label>斜纹不透明度 <span id="protector-slash-value">3%</span><input id="protector-slash" type="range" min="0" max="10" value="3" step="1" /><small>数值越低越透明；默认使用很浅的 3%。</small></label>
+              <label>斜纹粗细 <span id="protector-slash-width-value">5</span><input id="protector-slash-width" type="range" min="2" max="8" value="5" step="0.5" /><small>默认比上一版稍粗，可直接观察预览调整。</small></label>
+              <label>斜纹间距 <span id="protector-slash-spacing-value">20</span><input id="protector-slash-spacing" type="range" min="12" max="32" value="20" step="1" /><small>数值越大，斜纹之间越宽松。</small></label>
+              <label>灰色明度 <span id="protector-slash-gray-value">175</span><input id="protector-slash-gray" type="range" min="100" max="220" value="175" step="5" /><small>数值越高，灰色本身越浅。</small></label>
               <label class="protector-toggle"><input id="protector-safe-enabled" type="checkbox" checked /><span>启用圆形水印避让区</span></label>
               <label>避让区大小 <span id="protector-safe-size-value">25%</span><input id="protector-safe-size" type="range" min="10" max="45" value="25" step="1" /><small>拖动预览图中的圆圈，放到人物脸部或重要细节上。</small></label>
               <label>全图细颗粒强度 <span id="protector-texture-value">5%</span><input id="protector-texture" type="range" min="0" max="10" value="5" step="1" /><small>细颗粒会轻微调整全图像素，不随避让区消失，也不会写入原文件。</small></label>
@@ -152,6 +155,6 @@
 
     <div class="save-indicator" id="save-indicator">已保存在本机</div>
     <script src="content.js"></script>
-    <script src="editor.js?v=image-protector-5"></script>
+    <script src="editor.js?v=image-protector-6"></script>
   </body>
 </html>
