@@ -298,8 +298,11 @@ function renderPrologue() {
   renderLegendPassages();
   const legendArt = document.querySelector("#legend-art");
   const legendArtwork = String(legend.artwork || "").trim();
+  const legendDisplay = legend.artworkDisplay || {};
   legendArt.classList.toggle("has-image", Boolean(legendArtwork));
   legendArt.style.backgroundImage = legendArtwork ? `url("${legendArtwork.replace(/"/g, "%22")}")` : "";
+  legendArt.style.backgroundSize = legendDisplay.fit === "cover" ? "cover" : "contain";
+  legendArt.style.backgroundPosition = `${Number(legendDisplay.x ?? 50)}% ${Number(legendDisplay.y ?? 50)}%`;
   legendArt.setAttribute("aria-label", legend.alt || "关于琴的传说形象");
 }
 
@@ -851,6 +854,7 @@ function renderRumorPublication() {
   const toggle = document.querySelector("#publication-toggle");
   const showingTruth = complete && publicationTruthView;
   const artwork = String(showingTruth ? (legend.correctedArtwork || "") : (legend.artwork || "")).trim();
+  const artworkDisplay = showingTruth ? (legend.correctedArtworkDisplay || {}) : (legend.artworkDisplay || {});
 
   document.querySelector("#publication-title").textContent = legend.title || "关于“琴”的传说";
   document.querySelector("#publication-progress").textContent = complete
@@ -862,6 +866,8 @@ function renderRumorPublication() {
   visual.classList.toggle("is-truth", showingTruth);
   visual.classList.toggle("has-image", Boolean(artwork));
   visual.style.backgroundImage = artwork ? `url("${artwork.replace(/"/g, "%22")}")` : "";
+  visual.style.backgroundSize = artworkDisplay.fit === "cover" ? "cover" : "contain";
+  visual.style.backgroundPosition = `${Number(artworkDisplay.x ?? 50)}% ${Number(artworkDisplay.y ?? 50)}%`;
   visual.setAttribute("aria-label", complete
     ? (showingTruth ? (legend.correctedAlt || "完成勘误后显现的真相图像") : `${legend.alt || "关于琴的传说形象"}，点击切换图像`)
     : `${legend.alt || "关于琴的传说形象"}，已完成 ${solvedCount} 项勘误`);
