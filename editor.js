@@ -448,6 +448,142 @@ function renderDreamEditor() {
 
 function escapeHtml(value) { return String(value).replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]); }
 
+const protectorFile = document.querySelector("#protector-file");
+const protectorText = document.querySelector("#protector-text");
+const protectorOpacity = document.querySelector("#protector-opacity");
+const protectorOpacityValue = document.querySelector("#protector-opacity-value");
+const protectorMaxEdge = document.querySelector("#protector-max-edge");
+const protectorCanvas = document.querySelector("#protector-canvas");
+const protectorDownload = document.querySelector("#protector-download");
+const protectorStatus = document.querySelector("#protector-status");
+const protectorEmpty = document.querySelector("#protector-empty");
+const protectorContext = protectorCanvas?.getContext("2d");
+let protectorImage = null;
+let protectorObjectUrl = "";
+let protectorSourceName = "";
+
+function protectedFilename(filename) {
+  const base = String(filename || "image").replace(/\.[^.]+$/, "").replace(/[\\/:*?"<>|]+/g, "-").trim() || "image";
+  return `${base}-watermarked.webp`;
+}
+
+function drawProtectedImage() {
+  if (!protectorImage || !protectorContext) return;
+  const requestedEdge = Math.max(800, Math.min(2400, Number(protectorMaxEdge.value) || 1800));
+  const scale = Math.min(1, requestedEdge / Math.max(protectorImage.naturalWidth, protectorImage.naturalHeight));
+  const width = Math.max(1, Math.round(protectorImage.naturalWidth * scale));
+  const height = Math.max(1, Math.round(protectorImage.naturalHeight * scale));
+  protectorCanvas.width = width;
+  protectorCanvas.height = height;
+  protectorContext.clearRect(0, 0, width, height);
+  protectorContext.drawImage(protectorImage, 0, 0, width, height);
+
+  const label = protectorText.value.trim() || "© 仅供阅览";
+  const opacity = Math.max(0.08, Math.min(0.28, Number(protectorOpacity.value) / 100));
+  const fontSize = Math.max(20, Math.round(Math.min(width, height) * 0.035));
+  const diagonal = Math.ceil(Math.hypot(width, height));
+  protectorContext.save();
+  protectorContext.translate(width / 2, height / 2);
+  protectorContext.rotate(-Math.PI / 7);
+  protectorContext.font = `600 ${fontSize}px "Songti SC","Noto Serif SC",serif`;
+  protectorContext.textAlign = "center";
+  protectorContext.textBaseline = "middle";
+  protectorContext.lineWidth = Math.max(1, fontSize * 0.045);
+  const measured = protectorContext.measureText(label).width;
+  const stepX = Math.max(measured + fontSize * 3.8, width * 0.34);
+  const stepY = Math.max(fontSize * 4.6, height * 0.16);
+  let row = 0;
+  for (let y = -diagonal; y <= diagonal; y += stepY) {
+    const shift = row % 2 ? stepX / 2 : 0;
+    for (let x = -diagonal - shift; x <= diagonal; x += stepX) {
+      protectorContext.globalAlpha = opacity * 0.72;
+      protectorContext.strokeStyle = "#171713";
+      protectorContext.strokeText(label, x, y);
+      protectorContext.globalAlpha = opacity;
+      protectorContext.fillStyle = "#fffaf0";
+      protectorContext.fillText(label, x, y);
+    }
+    row += 1;
+  }
+  protectorContext.restore();
+
+  protectorEmpty.hidden = true;
+  protectorDownload.disabled = false;
+  protectorOpacityValue.textContent = `${Math.round(opacity * 100)}%`;
+  protectorStatus.textContent = `副本尺寸：${width} × ${height}。原图仍只保留在当前浏览器内存中。`;
+}
+
+function openProtectorSection() {
+  document.querySelectorAll("[data-section]").forEach((item) => item.classList.toggle("is-current", item.dataset.section === "protector"));
+  document.querySelectorAll("[data-editor-section]").forEach((section) => section.classList.toggle("is-active", section.dataset.editorSection === "protector"));
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+protectorFile?.addEventListener("change", () => {
+  const file = protectorFile.files?.[0];
+  if (!file) return;
+  if (!file.type.startsWith("image/")) {
+    protectorStatus.textContent = "请选择 PNG、JPG 或 WebP 图片。";
+    return;
+  }
+  if (protectorObjectUrl) URL.revokeObjectURL(protectorObjectUrl);
+  protectorObjectUrl = URL.createObjectURL(file);
+  protectorSourceName = file.name;
+  const image = new Image();
+  image.onload = () => {
+    protectorImage = image;
+    drawProtectedImage();
+  };
+  image.onerror = () => {
+    protectorStatus.textContent = "这张图片无法读取，请换一张图片重试。";
+  };
+  image.src = protectorObjectUrl;
+});
+
+[protectorText, protectorOpacity, protectorMaxEdge].forEach((input) => input?.addEventListener("input", drawProtectedImage));
+
+protectorDownload?.addEventListener("click", () => {
+  if (!protectorImage) return;
+  drawProtectedImage();
+  protectorCanvas.toBlob((blob) => {
+    if (!blob) {
+      protectorStatus.textContent = "生成副本失败，请重新选择图片。";
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = protectedFilename(protectorSourceName);
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    protectorStatus.textContent = `已生成 ${link.download}。请只上传这个带水印副本。`;
+  }, "image/webp", 0.88);
+});
+
+function decorateArtworkInputs() {
+  const selector = [
+    '[data-path$=".artwork"]',
+    '[data-path="map.artwork"]',
+    '[data-field="artwork"]',
+    '[data-comic-field="artwork"]',
+    '#dream-artwork-path'
+  ].join(",");
+  document.querySelectorAll(selector).forEach((input) => {
+    const label = input.closest("label");
+    if (!label || label.querySelector(".protect-image-shortcut")) return;
+    const shortcut = document.createElement("button");
+    shortcut.type = "button";
+    shortcut.className = "protect-image-shortcut";
+    shortcut.textContent = "上传前先生成带水印副本";
+    shortcut.addEventListener("click", openProtectorSection);
+    label.appendChild(shortcut);
+  });
+}
+
+const artworkObserver = new MutationObserver(decorateArtworkInputs);
+artworkObserver.observe(document.querySelector(".editor-main"), { childList: true, subtree: true });
+decorateArtworkInputs();
+
 document.querySelector("#add-location").addEventListener("click", () => {
   const id = `location-${Date.now()}`;
   draft.locations[id] = { name: "新地点", requiredKeyClues: 0, mapX: 50, mapY: 50, mapRevealRadius: draft.map?.defaultRevealRadius || 18, scenes: [{ id: `${id}-scene-1`, title: "新场景", artwork: "", placeholderTone: "archive", hotspots: [] }] };
