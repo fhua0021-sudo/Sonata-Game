@@ -452,8 +452,9 @@ const protectorFile = document.querySelector("#protector-file");
 const protectorText = document.querySelector("#protector-text");
 const protectorOpacity = document.querySelector("#protector-opacity");
 const protectorOpacityValue = document.querySelector("#protector-opacity-value");
-const protectorBlur = document.querySelector("#protector-blur");
-const protectorBlurValue = document.querySelector("#protector-blur-value");
+const protectorClearFile = document.querySelector("#protector-clear-file");
+const protectorSlash = document.querySelector("#protector-slash");
+const protectorSlashValue = document.querySelector("#protector-slash-value");
 const protectorSafeEnabled = document.querySelector("#protector-safe-enabled");
 const protectorSafeSize = document.querySelector("#protector-safe-size");
 const protectorSafeSizeValue = document.querySelector("#protector-safe-size-value");
@@ -486,25 +487,71 @@ function seededRandomFactory() {
   };
 }
 
-function drawPaperTexture(context, width, height, strength) {
+function drawFineGrain(context, width, height, strength) {
   if (strength <= 0) return;
+  const pixels = context.getImageData(0, 0, width, height);
+  const data = pixels.data;
   const random = seededRandomFactory();
-  const amount = Math.min(4200, Math.max(500, Math.round((width * height) / 1500)));
-  context.save();
-  context.globalCompositeOperation = "soft-light";
-  context.lineWidth = Math.max(0.45, Math.min(width, height) / 2400);
-  for (let index = 0; index < amount; index += 1) {
-    const x = random() * width;
-    const y = random() * height;
-    const length = 2 + random() * Math.max(3, Math.min(width, height) * 0.009);
-    const light = index % 3 === 0;
-    context.globalAlpha = strength * (0.16 + random() * 0.34);
-    context.strokeStyle = light ? "#fff7e8" : "#55483c";
+  const amplitude = Math.max(1, Math.round(strength * 58));
+  for (let index = 0; index < data.length; index += 4) {
+    const delta = Math.round((random() - 0.5) * amplitude * 2);
+    data[index] = Math.max(0, Math.min(255, data[index] + delta));
+    data[index + 1] = Math.max(0, Math.min(255, data[index + 1] + delta));
+    data[index + 2] = Math.max(0, Math.min(255, data[index + 2] + delta));
+  }
+  context.putImageData(pixels, 0, 0);
+}
+
+function drawDiagonalHatch(context, width, height, strength) {
+  if (strength <= 0) return;
+  const shortest = Math.min(width, height);
+  const spacing = Math.max(16, Math.round(shortest * 0.026));
+  const lineWidth = Math.max(1, shortest * 0.00115);
+  const first = -height - spacing;
+  const last = width + spacing;
+
+  function traceLines() {
     context.beginPath();
-    context.moveTo(x, y);
-    context.quadraticCurveTo(x + length * 0.48, y + (random() - 0.5) * 1.6, x + length, y + (random() - 0.5) * 2.2);
+    for (let x = first; x <= last; x += spacing) {
+      context.moveTo(x, height + spacing);
+      context.lineTo(x + height + spacing * 2, -spacing);
+    }
     context.stroke();
   }
+
+  context.save();
+  context.lineWidth = lineWidth;
+  context.globalAlpha = strength;
+  context.strokeStyle = "#302b28";
+  traceLines();
+  context.translate(lineWidth * 1.25, 0);
+  context.globalAlpha = strength * 0.48;
+  context.strokeStyle = "#fffaf0";
+  traceLines();
+  context.restore();
+}
+
+function drawCornerWatermark(context, width, height, text, opacity) {
+  const shortest = Math.min(width, height);
+  const padding = Math.max(18, shortest * 0.026);
+  let fontSize = Math.max(16, Math.round(shortest * 0.023));
+  context.save();
+  context.font = `500 ${fontSize}px "Songti SC","Noto Serif SC",serif`;
+  const maxWidth = width * 0.48;
+  const measured = context.measureText(text).width;
+  if (measured > maxWidth) {
+    fontSize = Math.max(13, Math.floor(fontSize * maxWidth / measured));
+    context.font = `500 ${fontSize}px "Songti SC","Noto Serif SC",serif`;
+  }
+  context.textAlign = "right";
+  context.textBaseline = "bottom";
+  context.lineWidth = Math.max(1, fontSize * 0.09);
+  context.globalAlpha = Math.min(0.42, opacity * 0.72);
+  context.strokeStyle = "#2c2723";
+  context.strokeText(text, width - padding, height - padding);
+  context.globalAlpha = opacity;
+  context.fillStyle = "#fff9ed";
+  context.fillText(text, width - padding, height - padding);
   context.restore();
 }
 
@@ -535,48 +582,13 @@ function drawProtectedImage() {
   overlay.width = width;
   overlay.height = height;
   const overlayContext = overlay.getContext("2d");
-  const label = protectorText.value.trim() || "© 仅供阅览";
-  const designedLabel = `— ♪  ${label}  ♪ —`;
-  const opacity = Math.max(0.08, Math.min(0.28, Number(protectorOpacity.value) / 100));
-  const blurLevel = Math.max(0, Math.min(8, Number(protectorBlur.value) || 0));
-  const fontSize = Math.max(20, Math.round(Math.min(width, height) * 0.032));
-  const diagonal = Math.ceil(Math.hypot(width, height));
-  overlayContext.translate(width / 2, height / 2);
-  overlayContext.rotate(-Math.PI / 7);
-  overlayContext.font = `500 ${fontSize}px "Songti SC","Noto Serif SC",serif`;
-  overlayContext.textAlign = "center";
-  overlayContext.textBaseline = "middle";
-  overlayContext.lineWidth = Math.max(1, fontSize * 0.04);
-  const measured = overlayContext.measureText(designedLabel).width;
-  const stepX = Math.max(measured + fontSize * 3.5, width * 0.38);
-  const stepY = Math.max(fontSize * 5.2, height * 0.18);
-  let row = 0;
-  for (let y = -diagonal; y <= diagonal; y += stepY) {
-    const shift = row % 2 ? stepX / 2 : 0;
-    for (let x = -diagonal - shift; x <= diagonal; x += stepX) {
-      if (blurLevel > 0) {
-        overlayContext.save();
-        overlayContext.filter = `blur(${Math.max(1, fontSize * blurLevel * 0.018)}px)`;
-        overlayContext.globalAlpha = opacity * 0.42;
-        overlayContext.fillStyle = "#fff8e8";
-        overlayContext.fillText(designedLabel, x + fontSize * 0.08, y + fontSize * 0.06);
-        overlayContext.globalAlpha = opacity * 0.28;
-        overlayContext.fillStyle = "#2f2924";
-        overlayContext.fillText(designedLabel, x - fontSize * 0.07, y - fontSize * 0.04);
-        overlayContext.restore();
-      }
-      overlayContext.globalAlpha = opacity * 0.66;
-      overlayContext.strokeStyle = "#312a25";
-      overlayContext.strokeText(designedLabel, x, y);
-      overlayContext.globalAlpha = opacity;
-      overlayContext.fillStyle = "#fff9ec";
-      overlayContext.fillText(designedLabel, x, y);
-    }
-    row += 1;
-  }
+  const label = protectorText.value.trim() || "© 《琴》· 仅供阅览";
+  const opacity = Math.max(0.08, Math.min(0.32, Number(protectorOpacity.value) / 100));
+  const slashStrength = Math.max(0.02, Math.min(0.14, Number(protectorSlash.value) / 100));
+  drawDiagonalHatch(overlayContext, width, height, slashStrength);
+  drawCornerWatermark(overlayContext, width, height, label, opacity);
 
   if (protectorSafeEnabled.checked) {
-    overlayContext.setTransform(1, 0, 0, 1, 0, 0);
     overlayContext.globalCompositeOperation = "destination-out";
     const centerX = protectorSafeArea.x * width;
     const centerY = protectorSafeArea.y * height;
@@ -591,16 +603,18 @@ function drawProtectedImage() {
   }
 
   protectorContext.drawImage(overlay, 0, 0);
-  const textureStrength = Math.max(0, Math.min(0.08, Number(protectorTexture.value) / 100));
-  drawPaperTexture(protectorContext, width, height, textureStrength);
+  const textureStrength = Math.max(0, Math.min(0.1, Number(protectorTexture.value) / 100));
+  drawFineGrain(protectorContext, width, height, textureStrength);
 
   protectorEmpty.hidden = true;
+  protectorCanvasStage.hidden = false;
   protectorDownload.disabled = false;
+  protectorClearFile.hidden = false;
   protectorOpacityValue.textContent = `${Math.round(opacity * 100)}%`;
-  protectorBlurValue.textContent = String(blurLevel);
+  protectorSlashValue.textContent = `${Math.round(slashStrength * 100)}%`;
   protectorTextureValue.textContent = `${Math.round(textureStrength * 100)}%`;
   updateSafeZoneGuide(width, height);
-  protectorStatus.textContent = `副本尺寸：${width} × ${height}。圆圈内避开文字水印，全图保留极淡纸纹。`;
+  protectorStatus.textContent = `副本尺寸：${width} × ${height}。全图为细颗粒与斜杠涂层，文字水印位于右下角。`;
 }
 
 function openProtectorSection() {
@@ -608,6 +622,24 @@ function openProtectorSection() {
   document.querySelectorAll("[data-editor-section]").forEach((section) => section.classList.toggle("is-active", section.dataset.editorSection === "protector"));
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
+
+function clearProtectorFile() {
+  if (protectorObjectUrl) URL.revokeObjectURL(protectorObjectUrl);
+  protectorObjectUrl = "";
+  protectorSourceName = "";
+  protectorImage = null;
+  protectorFile.value = "";
+  protectorCanvas.width = 1;
+  protectorCanvas.height = 1;
+  protectorCanvasStage.hidden = true;
+  protectorSafeZone.hidden = true;
+  protectorEmpty.hidden = false;
+  protectorDownload.disabled = true;
+  protectorClearFile.hidden = true;
+  protectorStatus.textContent = "已清除本地原图。它不会进入生成的更新文件。";
+}
+
+protectorClearFile?.addEventListener("click", clearProtectorFile);
 
 protectorFile?.addEventListener("change", () => {
   const file = protectorFile.files?.[0];
@@ -630,7 +662,7 @@ protectorFile?.addEventListener("change", () => {
   image.src = protectorObjectUrl;
 });
 
-[protectorText, protectorOpacity, protectorBlur, protectorSafeSize, protectorTexture, protectorMaxEdge].forEach((input) => input?.addEventListener("input", () => {
+[protectorText, protectorOpacity, protectorSlash, protectorSafeSize, protectorTexture, protectorMaxEdge].forEach((input) => input?.addEventListener("input", () => {
   if (input === protectorSafeSize) protectorSafeArea.size = Number(protectorSafeSize.value) / 100;
   drawProtectedImage();
 }));
