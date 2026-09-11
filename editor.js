@@ -455,6 +455,12 @@ const protectorOpacityValue = document.querySelector("#protector-opacity-value")
 const protectorClearFile = document.querySelector("#protector-clear-file");
 const protectorSlash = document.querySelector("#protector-slash");
 const protectorSlashValue = document.querySelector("#protector-slash-value");
+const protectorSlashWidth = document.querySelector("#protector-slash-width");
+const protectorSlashWidthValue = document.querySelector("#protector-slash-width-value");
+const protectorSlashSpacing = document.querySelector("#protector-slash-spacing");
+const protectorSlashSpacingValue = document.querySelector("#protector-slash-spacing-value");
+const protectorSlashGray = document.querySelector("#protector-slash-gray");
+const protectorSlashGrayValue = document.querySelector("#protector-slash-gray-value");
 const protectorSafeEnabled = document.querySelector("#protector-safe-enabled");
 const protectorSafeSize = document.querySelector("#protector-safe-size");
 const protectorSafeSizeValue = document.querySelector("#protector-safe-size-value");
@@ -502,11 +508,13 @@ function drawFineGrain(context, width, height, strength) {
   context.putImageData(pixels, 0, 0);
 }
 
-function drawDiagonalHatch(context, width, height, strength) {
+function drawDiagonalHatch(context, width, height, strength, widthSetting, spacingSetting, graySetting) {
   if (strength <= 0) return;
   const shortest = Math.min(width, height);
-  const spacing = Math.max(16, shortest * 0.026);
-  const lineWidth = Math.max(2, shortest * 0.0054);
+  const previewScale = shortest / 740;
+  const spacing = Math.max(5, spacingSetting * previewScale);
+  const lineWidth = Math.max(1, widthSetting * previewScale);
+  const gray = Math.max(100, Math.min(220, Math.round(graySetting)));
   const first = -height - spacing;
   const last = width + spacing;
 
@@ -517,8 +525,8 @@ function drawDiagonalHatch(context, width, height, strength) {
     context.lineTo(x + height + spacing * 2, -spacing);
   }
   context.lineWidth = lineWidth;
-  context.globalAlpha = Math.max(0.01, Math.min(0.1, strength));
-  context.strokeStyle = "#5f6268";
+  context.globalAlpha = Math.max(0, Math.min(0.1, strength));
+  context.strokeStyle = `rgb(${gray}, ${gray}, ${gray})`;
   context.stroke();
   context.restore();
 }
@@ -576,8 +584,11 @@ function drawProtectedImage() {
   const overlayContext = overlay.getContext("2d");
   const label = protectorText.value.trim() || "© 《琴》· 仅供阅览";
   const opacity = Math.max(0.08, Math.min(0.32, Number(protectorOpacity.value) / 100));
-  const slashStrength = Math.max(0.01, Math.min(0.1, Number(protectorSlash.value) / 100));
-  drawDiagonalHatch(overlayContext, width, height, slashStrength);
+  const slashStrength = Math.max(0, Math.min(0.1, Number(protectorSlash.value) / 100));
+  const slashWidth = Math.max(2, Math.min(8, Number(protectorSlashWidth.value) || 5));
+  const slashSpacing = Math.max(12, Math.min(32, Number(protectorSlashSpacing.value) || 20));
+  const slashGray = Math.max(100, Math.min(220, Number(protectorSlashGray.value) || 175));
+  drawDiagonalHatch(overlayContext, width, height, slashStrength, slashWidth, slashSpacing, slashGray);
   drawCornerWatermark(overlayContext, width, height, label, opacity);
 
   if (protectorSafeEnabled.checked) {
@@ -604,6 +615,9 @@ function drawProtectedImage() {
   protectorClearFile.hidden = false;
   protectorOpacityValue.textContent = `${Math.round(opacity * 100)}%`;
   protectorSlashValue.textContent = `${Math.round(slashStrength * 100)}%`;
+  protectorSlashWidthValue.textContent = String(slashWidth);
+  protectorSlashSpacingValue.textContent = String(Math.round(slashSpacing));
+  protectorSlashGrayValue.textContent = String(Math.round(slashGray));
   protectorTextureValue.textContent = `${Math.round(textureStrength * 100)}%`;
   updateSafeZoneGuide(width, height);
   protectorStatus.textContent = `副本尺寸：${width} × ${height}。全图为细颗粒与浅灰斜纹，文字水印位于右下角。`;
@@ -654,7 +668,7 @@ protectorFile?.addEventListener("change", () => {
   image.src = protectorObjectUrl;
 });
 
-[protectorText, protectorOpacity, protectorSlash, protectorSafeSize, protectorTexture, protectorMaxEdge].forEach((input) => input?.addEventListener("input", () => {
+[protectorText, protectorOpacity, protectorSlash, protectorSlashWidth, protectorSlashSpacing, protectorSlashGray, protectorSafeSize, protectorTexture, protectorMaxEdge].forEach((input) => input?.addEventListener("input", () => {
   if (input === protectorSafeSize) protectorSafeArea.size = Number(protectorSafeSize.value) / 100;
   drawProtectedImage();
 }));
