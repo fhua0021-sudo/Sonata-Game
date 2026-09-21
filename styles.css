@@ -1044,7 +1044,7 @@ button:focus-visible {
 .dream-scene.is-black { color: #eee8da; background: #090909; }
 .dream-scene.is-white { color: #24231e; background: #eee9dc; }
 .dream-close { position: absolute; z-index: 8; top: 24px; left: 28px; color: inherit; }
-.dream-figure { position: absolute; top: 12%; left: 50%; display: grid; place-content: center; gap: 8px; width: min(84vw, 1200px); height: 78%; text-align: center; border: 1px solid currentColor; opacity: .74; transform: translateX(-50%); }
+.dream-figure { position: absolute; inset: 58px 2vw 76px; display: grid; place-content: center; gap: 8px; width: auto; height: auto; text-align: center; border: 1px solid currentColor; opacity: .74; transform: none; }
 .dream-figure { background-position:center; background-repeat:no-repeat; background-size:contain; }
 .dream-figure.has-image { border-color:transparent; opacity:1; }
 .dream-figure.has-image span,.dream-figure.has-image b { display:none; }
@@ -1172,7 +1172,7 @@ body.reduce-motion *::after { animation-duration: .01ms !important; transition-d
   .comic-copy > span { grid-row:auto; }
   .comic-page-strip { gap:7px; }
   .comic-page-strip button { width:38px; height:38px; }
-  .dream-figure { width: 78vw; }
+  .dream-figure { inset: 62px 2vw 128px; width: auto; height: auto; }
   .dream-caption { bottom: 14%; }
   .light-switch { right: 5%; bottom: 4%; }
   .baton-cursor,.quill-cursor { display: none !important; }
