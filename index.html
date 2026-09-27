@@ -10,7 +10,7 @@
       content="《琴：仪式的和弦》——一场关于残缺乐谱与失落音乐史的探索。"
     />
     <title>琴：仪式的和弦</title>
-    <link rel="stylesheet" href="styles.css?v=legend-ink-4" />
+    <link rel="stylesheet" href="styles.css?v=correspondence-1" />
   </head>
   <body>
     <main id="game" aria-live="polite">
@@ -94,10 +94,10 @@
         <div class="game-layout">
           <aside class="case-panel" aria-label="当前调查">
             <p class="panel-kicker">当前目标</p>
-            <h3>寻找音乐史断层的起点</h3>
-            <p>调查地图上开放的地点。关键记录会自动收入调查簿。</p>
+            <h3 id="current-objective-title">核对传说中的疑点</h3>
+            <p id="current-objective-copy">从传说文本与现存史料中，找出彼此矛盾的部分。</p>
             <div class="case-rule"></div>
-            <p class="small-note">琴声有时比文字更接近真相。</p>
+            <p class="small-note" id="current-objective-note">先判断哪里值得怀疑，再寻找能够反驳它的记录。</p>
           </aside>
 
           <div class="map-wrap">
@@ -109,9 +109,14 @@
             </div>
           </div>
 
-          <aside class="notes-panel" aria-label="调查便笺">
-            <div class="paper-note note-one">档案目录中，有一册年份被人为涂改。</div>
-            <div class="paper-note note-two">先查演出记录，再对照战前报刊。</div>
+          <aside class="notes-panel" aria-label="调查资料匣">
+            <p class="panel-kicker">资料匣</p>
+            <div class="resource-shelf">
+              <button class="resource-entry" data-resource-legend type="button"><span>传说页</span><small>重读并继续标记疑点</small></button>
+              <button class="resource-entry" data-letter-id="prologue" type="button"><span>导师审批邮件</span><small>已归档</small></button>
+              <button class="resource-entry is-hidden" data-letter-id="mentorFollowup" type="button"><span>导师后续来函</span><small>第一项勘误后解锁</small></button>
+              <button class="resource-entry is-hidden" data-letter-id="anonymous" type="button"><span>匿名来信</span><small>来历不明</small></button>
+            </div>
           </aside>
         </div>
 
@@ -189,6 +194,19 @@
             </figure>
             <div class="clue-detail-location" id="clue-detail-location"></div>
             <div class="clue-detail-body" id="clue-detail-body"></div>
+          </article>
+        </section>
+
+        <section class="panel-layer" id="letter-panel" aria-hidden="true">
+          <article class="panel-page archived-letter-page">
+            <header class="page-header"><div><p id="archived-letter-term">CORRESPONDENCE</p><h2 id="archived-letter-subject">来信</h2></div><button class="panel-close" type="button">返回地图</button></header>
+            <dl class="archived-letter-meta">
+              <div><dt>发件人</dt><dd id="archived-letter-sender"></dd></div>
+              <div><dt>归档状态</dt><dd id="archived-letter-status">个人研究资料</dd></div>
+            </dl>
+            <div class="archived-letter-body" id="archived-letter-body"></div>
+            <footer class="archived-letter-signature"><span id="archived-letter-signature"></span><i aria-hidden="true"></i></footer>
+            <button class="primary-button light archived-letter-action" id="archived-letter-action" type="button" hidden>依照来信查看地图</button>
           </article>
         </section>
 
@@ -337,6 +355,6 @@
       <div class="toast" id="toast" role="status"><span id="toast-message"></span><button id="toast-action" type="button" hidden></button></div>
     </main>
     <script src="content.js"></script>
-    <script src="game.js?v=legend-ink-4"></script>
+    <script src="game.js?v=correspondence-1"></script>
   </body>
 </html>
