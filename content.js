@@ -214,6 +214,35 @@ window.SONATA_CONTENT = {
           ]
         }
       ]
+    },
+    "nameless-island": {
+      "name": "无名岛",
+      "unlockType": "anonymousMail",
+      "requiredKeyClues": 0,
+      "mapX": 82,
+      "mapY": 86,
+      "mapRevealRadius": 12,
+      "scenes": [
+        {
+          "id": "nameless-island-shore",
+          "title": "无名岛海岸",
+          "artwork": "",
+          "placeholderTone": "archive",
+          "hotspots": [
+            {
+              "id": "nameless-island-trace",
+              "x": 54,
+              "y": 48,
+              "size": 7,
+              "kind": "optional",
+              "title": "岛上的遗留痕迹",
+              "text": "占位摘要：在此填写匿名来信最终指向的发现。",
+              "artwork": "",
+              "fullText": "占位完整正文：这里可作为本阶段最后的彩蛋或通往未来篇的接口。"
+            }
+          ]
+        }
+      ]
     }
   },
   "rumorModules": [
@@ -330,7 +359,7 @@ window.SONATA_CONTENT = {
       "《全职猎人》：角色初始灵感"
     ]
   },
-  "schemaVersion": 5,
+  "schemaVersion": 6,
   "legend": {
     "eyebrow": "A LEGEND PASSED DOWN",
     "title": "关于“琴”的传说",
@@ -412,5 +441,21 @@ window.SONATA_CONTENT = {
         }
       }
     ]
+  },
+  "correspondence": {
+    "mentorFollowup": {
+      "term": "秋季学期 · 研究进度回复",
+      "sender": "音乐史系研究项目指导办公室",
+      "subject": "关于第一阶段史料核对结果及后续调查范围的补充意见",
+      "body": "已收到你提交的第一项传闻勘误及所附档案目录摘录。现有材料足以说明，后世对《黑暗协奏曲》早期用途的概括存在偏差；该结论可以暂列为阶段性判断，但尚不足以解释其声誉转变的具体时间与原因。\n请继续核对战前公开演出记录、节目单及相关评论，并重点留意曲谱转移、版本缺页与战争时期资料中断之间是否存在连续关系。后续记录应区分原始文献、战后转述与个人证言，不宜合并处理。\n旧歌剧院与战前报刊档案或可提供进一步材料。相关阅览事项请按既定程序自行申请。",
+      "signature": "导师办公室"
+    },
+    "anonymous": {
+      "term": "来历不明 · 无法核验寄件信息",
+      "sender": "匿名",
+      "subject": "关于你正在查找的那份曲谱",
+      "body": "你查到的记录，只到陆地为止。\n若还想知道那份曲谱在战争之后去了哪里，去东南外海的无名岛。那里没有正式航线，旧港口的船夫也不会主动提起它。\n不要向学院申请，也不要把这封信列入档案。岛上的人并不欢迎研究者——尤其是询问那首曲子的人。",
+      "signature": "未署名"
+    }
   }
 };
