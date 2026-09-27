@@ -30,6 +30,11 @@ function loadDraft() {
     loaded.schemaVersion = defaultContent.schemaVersion || 2;
     if (loaded.subtitle === "遗失的和弦") loaded.subtitle = defaultContent.subtitle;
     loaded.prologue = { ...clone(window.SONATA_CONTENT.prologue), ...(loaded.prologue || {}) };
+    const defaultCorrespondence = clone(defaultContent.correspondence || {});
+    loaded.correspondence = {
+      mentorFollowup: { ...(defaultCorrespondence.mentorFollowup || {}), ...(loaded.correspondence?.mentorFollowup || {}) },
+      anonymous: { ...(defaultCorrespondence.anonymous || {}), ...(loaded.correspondence?.anonymous || {}) }
+    };
     loaded.legend = { ...clone(window.SONATA_CONTENT.legend || {}), ...(loaded.legend || {}) };
     loaded.legend.artworkDisplay = normalizeArtworkDisplay(loaded.legend.artworkDisplay);
     loaded.legend.correctedArtworkDisplay = normalizeArtworkDisplay(loaded.legend.correctedArtworkDisplay);
