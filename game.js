@@ -83,7 +83,9 @@ const defaultState = {
   comicFinalViewed: false,
   introComplete: false,
   investigationComplete: false,
-  errataReadyAnnounced: false
+  errataReadyAnnounced: false,
+  readLetters: [],
+  anonymousMailUnlocked: false
 };
 
 let state = loadState();
@@ -100,6 +102,9 @@ function loadState() {
     if (!Array.isArray(loaded.dreamFoundForms)) loaded.dreamFoundForms = [];
     if (!Array.isArray(loaded.dreamFoundHotspots)) loaded.dreamFoundHotspots = [];
     if (!Array.isArray(loaded.unlockedComicPages)) loaded.unlockedComicPages = [];
+    if (!Array.isArray(loaded.readLetters)) loaded.readLetters = [];
+    if (loaded.introComplete && !loaded.readLetters.includes("prologue")) loaded.readLetters.push("prologue");
+    loaded.anonymousMailUnlocked = Boolean(loaded.anonymousMailUnlocked);
     return loaded;
   } catch {
     return JSON.parse(JSON.stringify(defaultState));
@@ -525,7 +530,98 @@ function isLocationComplete(locationId) {
 }
 function isLocationUnlocked(locationId, keyCount = getKeyCount()) {
   const location = CONTENT.locations[locationId];
-  return Boolean(location) && keyCount >= (location.requiredKeyClues || 0);
+  if (!location) return false;
+  if (location.unlockType === "anonymousMail") return state.readLetters.includes("anonymous");
+  return keyCount >= (location.requiredKeyClues || 0);
+}
+
+function getArchivedLetter(letterId) {
+  if (letterId === "prologue") return {
+    term: CONTENT.prologue?.term,
+    sender: CONTENT.prologue?.sender,
+    subject: CONTENT.prologue?.subject,
+    body: CONTENT.prologue?.body,
+    signature: CONTENT.prologue?.signature
+  };
+  return CONTENT.correspondence?.[letterId] || null;
+}
+
+function isLetterAvailable(letterId) {
+  if (letterId === "prologue") return state.introComplete;
+  if (letterId === "mentorFollowup") return state.correctedRumorModules.length >= 1;
+  if (letterId === "anonymous") return state.anonymousMailUnlocked;
+  return false;
+}
+
+function renderResourceShelf() {
+  document.querySelectorAll("[data-letter-id]").forEach((button) => {
+    const letterId = button.dataset.letterId;
+    const available = isLetterAvailable(letterId);
+    button.classList.toggle("is-hidden", !available);
+    button.classList.toggle("is-unread", available && !state.readLetters.includes(letterId));
+    const status = button.querySelector("small");
+    if (status && available) status.textContent = state.readLetters.includes(letterId) ? "已归档 · 点击重读" : "新邮件 · 点击拆阅";
+  });
+}
+
+function updateCurrentObjective() {
+  const title = document.querySelector("#current-objective-title");
+  const copy = document.querySelector("#current-objective-copy");
+  const note = document.querySelector("#current-objective-note");
+  if (!title || !copy || !note) return;
+  const solvedCount = state.correctedRumorModules.length;
+  if (!areAllLegendClaimsFound()) {
+    title.textContent = "标记传说中的可疑之处";
+    copy.textContent = "重读传说正文，点击需要核对的字句。疑点可以在任何阶段继续寻找。";
+    note.textContent = "先判断哪里值得怀疑，再寻找能够反驳它的记录。";
+  } else if (!isErrataReady()) {
+    title.textContent = "收集能够反驳传闻的史料";
+    copy.textContent = "调查地图上已经开放的地点。关键记录会自动收入调查簿。";
+    note.textContent = "疑点已经留下墨线，但结论仍需证据。";
+  } else if (!areAllModulesSolved()) {
+    title.textContent = solvedCount ? "继续完成传闻勘误" : "开始核对第一则传闻";
+    copy.textContent = "进入“传闻勘误”，为每项传闻选择真正与之矛盾的调查记录。";
+    note.textContent = solvedCount ? `已完成 ${solvedCount} 项勘误。` : "证据已经齐备，可以开始提交判断。";
+  } else if (!state.anonymousMailUnlocked) {
+    title.textContent = "阅读已经复原的历史";
+    copy.textContent = "传闻已经逐一更正。阅读完整复原稿，整理本阶段结论。";
+    note.textContent = "有些记录，或许只差最后一个注脚。";
+  } else if (!state.readLetters.includes("anonymous")) {
+    title.textContent = "查阅来历不明的邮件";
+    copy.textContent = "资料匣中出现了一封无法核验寄件信息的来信。";
+    note.textContent = "信封上没有署名，也没有学院的收发印章。";
+  } else if (!isLocationComplete("nameless-island")) {
+    title.textContent = "前往无名岛";
+    copy.textContent = "依照匿名来信的指引，调查东南外海刚刚显现的地点。";
+    note.textContent = "陆地上的记录已经到了尽头。";
+  } else {
+    title.textContent = "整理最后的调查记录";
+    copy.textContent = "无名岛的发现已经收入调查簿，可以结束本阶段调查。";
+    note.textContent = "曲未终。";
+  }
+}
+
+function openArchivedLetter(letterId) {
+  if (!isLetterAvailable(letterId)) return;
+  const letter = getArchivedLetter(letterId);
+  if (!letter) return;
+  const firstRead = !state.readLetters.includes(letterId);
+  if (firstRead) state.readLetters.push(letterId);
+  if (firstRead) saveState();
+  document.querySelector("#archived-letter-term").textContent = letter.term || "CORRESPONDENCE";
+  document.querySelector("#archived-letter-subject").textContent = letter.subject || "无主题";
+  document.querySelector("#archived-letter-sender").textContent = letter.sender || "未署名";
+  document.querySelector("#archived-letter-status").textContent = letterId === "anonymous" ? "未登记 · 请谨慎核验" : "个人研究资料";
+  document.querySelector("#archived-letter-signature").textContent = letter.signature || letter.sender || "未署名";
+  document.querySelector("#archived-letter-body").innerHTML = String(letter.body || "").split(/\n\s*\n/).filter(Boolean).map((paragraph) => `<p>${paragraph.replace(/\n/g, "<br>")}</p>`).join("");
+  const action = document.querySelector("#archived-letter-action");
+  action.hidden = letterId !== "anonymous";
+  action.dataset.letterAction = letterId;
+  if (letterId === "anonymous" && firstRead) {
+    renderMapPins();
+    queueMapShroud();
+  }
+  openPanel("letter-panel");
 }
 
 function isComicMilestoneComplete(page) {
@@ -551,6 +647,7 @@ function renderMapPins() {
   if (!mapPinLayer) return;
   mapPinLayer.innerHTML = "";
   Object.entries(CONTENT.locations).forEach(([locationId, location], index) => {
+    if (location.unlockType === "anonymousMail" && !isLocationUnlocked(locationId)) return;
     const pin = document.createElement("button");
     pin.type = "button";
     pin.className = "map-pin";
@@ -666,6 +763,8 @@ function updateProgressUI() {
   comicButton.classList.toggle("is-hidden", !hasComicPages);
   comicDeskItem.classList.toggle("is-hidden", !hasComicPages);
   comicDeskItem.querySelector("small").textContent = hasComicPages ? `已复原 ${comicCount} / ${getComicPages().length} 页` : "查看逐步复原的黑白漫画";
+  renderResourceShelf();
+  updateCurrentObjective();
   document.querySelectorAll(".map-pin[data-location]").forEach((pin) => {
     const location = CONTENT.locations[pin.dataset.location];
     const locationUnlocked = isLocationUnlocked(pin.dataset.location);
@@ -1001,6 +1100,7 @@ function submitTimeline() {
   const correct = new Set(activeModule.evidenceIds || []);
   const selectionCorrect = correct.size === selectedEvidenceIds.size && [...correct].every((id) => selectedEvidenceIds.has(id));
   if (selectionCorrect) {
+    const firstCorrection = state.correctedRumorModules.length === 0;
     if (!state.correctedRumorModules.includes(activeModule.id)) state.correctedRumorModules.push(activeModule.id);
     state.rumorSolved = areAllModulesSolved();
     saveState();
@@ -1017,6 +1117,7 @@ function submitTimeline() {
         }
       }, state.reduceMotion ? 100 : 760);
     }
+    else if (firstCorrection) showToast("【收到导师来函】第一阶段核对结果已获回复。", "阅读邮件", () => openArchivedLetter("mentorFollowup"));
     else if (newComicPages.length) showToast(`【图像残页已复原：第 ${getComicPages().indexOf(newComicPages[0]) + 1} 页】`, "查看残页", () => openPanel("comic-panel"));
     else showToast(`${activeModule.title}已经更正，结论已收入调查簿。`);
     renderTimeline();
@@ -1281,6 +1382,10 @@ document.querySelector("#start-game").addEventListener("click", () => {
   showScreen("prologue");
 });
 document.querySelector("#open-mail").addEventListener("click", () => {
+  if (!state.readLetters.includes("prologue")) {
+    state.readLetters.push("prologue");
+    saveState();
+  }
   document.querySelector("#mail-inbox").classList.add("is-read");
   document.querySelector("#mentor-letter").classList.add("is-open");
   document.querySelector("#mentor-letter").setAttribute("aria-hidden", "false");
@@ -1290,6 +1395,18 @@ document.querySelector("#open-legend").addEventListener("click", () => {
 });
 document.querySelector("#header-open-legend").addEventListener("click", () => {
   openLegend("map-screen");
+});
+document.querySelectorAll("[data-resource-legend]").forEach((button) => button.addEventListener("click", () => openLegend("map-screen")));
+document.querySelectorAll("[data-letter-id]").forEach((button) => button.addEventListener("click", () => openArchivedLetter(button.dataset.letterId)));
+document.querySelector("#archived-letter-action").addEventListener("click", () => {
+  closePanels();
+  showScreen("map-screen");
+  renderMapPins();
+  updateProgressUI();
+  window.setTimeout(() => {
+    animateMapReveal("nameless-island");
+    showToast("【无名岛已显现】匿名来信指向了东南外海。");
+  }, 180);
 });
 document.querySelector("#open-publication-legend").addEventListener("click", () => {
   openLegend("timeline-panel");
@@ -1451,7 +1568,27 @@ document.querySelector("#dream-guide-close").addEventListener("click", () => {
   guide.setAttribute("aria-hidden", "true");
 });
 document.querySelector("#dream-rest").addEventListener("click", beginDreamIntro);
-document.querySelector("#finish-investigation").addEventListener("click", openCredits);
+document.querySelector("#finish-investigation").addEventListener("click", () => {
+  if (state.rumorSolved && !state.anonymousMailUnlocked) {
+    state.anonymousMailUnlocked = true;
+    saveState();
+    closePanels();
+    showScreen("map-screen");
+    showToast("【收到匿名来信】寄件信息无法核验。", "拆阅邮件", () => openArchivedLetter("anonymous"));
+    return;
+  }
+  if (state.anonymousMailUnlocked && !state.readLetters.includes("anonymous")) {
+    showToast("先查看资料匣中新出现的匿名来信。", "拆阅邮件", () => openArchivedLetter("anonymous"));
+    return;
+  }
+  if (state.readLetters.includes("anonymous") && !isLocationComplete("nameless-island")) {
+    closePanels();
+    showScreen("map-screen");
+    showToast("无名岛仍有尚未调查的痕迹。");
+    return;
+  }
+  openCredits();
+});
 document.querySelector("#credits-skip").addEventListener("click", () => {
   const credits = document.querySelector("#credits-layer");
   credits.classList.remove("is-open");
